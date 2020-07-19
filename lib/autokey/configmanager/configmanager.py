@@ -335,9 +335,9 @@ class ConfigManager:
                 if i is None:
                     isNew = True
                     if baseName.endswith(".txt"):
-                        i = autokey.model.phrase.Phrase("", "", path=path)
+                        i = autokey.model.phrase.Phrase("", "", "", path=path)
                     elif baseName.endswith(".py"):
-                        i = autokey.model.script.Script("", "", path=path)
+                        i = autokey.model.script.Script("", "", "", path=path)
 
                 if i is not None:
                     folder = self.__checkExistingFolder(directory)
@@ -607,7 +607,7 @@ class ConfigManager:
                 else:
                     description = theEntry
 
-                p = autokey.model.phrase.Phrase(description, theEntry)
+                p = autokey.model.phrase.Phrase(description, theEntry, "")
                 if self.SETTINGS[RECENT_ENTRY_SUGGEST]:
                     p.set_modes([autokey.model.helpers.TriggerMode.PREDICTIVE])
 
@@ -676,6 +676,7 @@ class ConfigManager:
         @param newFilterPattern:
         @param targetItem: the phrase for which the hotKey to be used
         """
+        return True, None # TODO CJB TMP
         item = self.get_item_with_hotkey(modifiers, hotKey, newFilterPattern)
         if item:
             return item is targetItem, item
@@ -772,6 +773,7 @@ class GlobalHotkey(autokey.model.abstract_hotkey.AbstractHotkey):
         autokey.model.abstract_hotkey.AbstractHotkey.__init__(self)
         self.enabled = False
         self.windowInfoRegex = None
+        self.match_code = None
         self.isRecursive = False
         self.parent = None
         self.modes = []

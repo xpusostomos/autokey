@@ -54,8 +54,8 @@ class AbstractHotkey(AbstractWindowFilter):
         if TriggerMode.HOTKEY in self.modes:
             self.modes.remove(TriggerMode.HOTKEY)
 
-    def check_hotkey(self, modifiers, key, windowTitle):
-        if self.hotKey is not None and self._should_trigger_window_title(windowTitle):
+    def check_hotkey(self, modifiers, key, windowTitle):  #TODO chris
+        if self.hotKey is not None:
             return (self.modifiers == modifiers) and (self.hotKey == key)
         else:
             return False

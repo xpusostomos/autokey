@@ -51,6 +51,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.parent = None  # type: typing.Optional[Folder]
         self.path = path
         self.temporary = False
+        self.match_code = ''
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -109,9 +110,11 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             if os.path.isfile(entryPath):
                 i = None
                 if entryPath.endswith(".txt"):
-                    i = Phrase("", "", path=entryPath)
+                    i = Phrase("", "", "", path=entryPath)
+                elif entryPath.endswith(".match.py"):
+                    pass
                 elif entryPath.endswith(".py"):
-                    i = Script("", "", path=entryPath)
+                    i = Script("", "", "", path=entryPath)
 
                 if i is not None:
                     i.load(self)

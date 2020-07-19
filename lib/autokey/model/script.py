@@ -19,9 +19,10 @@ import json
 import os
 import typing
 from pathlib import Path
+import sys
 
 from autokey.model.store import Store
-from autokey.model.helpers import JSON_FILE_PATTERN, get_safe_path, TriggerMode
+from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
@@ -34,12 +35,13 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     Encapsulates all data and behaviour for a script.
     """
 
-    def __init__(self, description: str, source_code: str, path=None):
+    def __init__(self, description: str, source_code: str, match_code: str, path=None):
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.code = source_code
+        self.match_code = match_code
         self.store = Store()
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
@@ -60,6 +62,10 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         directory, base_name = os.path.split(self.path[:-3])
         return JSON_FILE_PATTERN.format(directory, base_name)
 
+    def get_match_path(self):
+        directory, base_name = os.path.split(self.path[:-3])
+        return MATCH_FILE_PATTERN.format(directory, base_name)
+
     def persist(self):
         if self.path is None:
             self.build_path()
@@ -68,6 +74,15 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
 
         with open(self.path, "w") as out_file:
             out_file.write(self.code)
+
+        if self.match_code == '':
+            try:
+                os.remove(self.get_match_path())
+            except FileNotFoundError:
+                pass
+        else:
+            with open(self.get_match_path(), "w") as out_file:
+                out_file.write(self.match_code)
 
     def get_serializable(self):
         d = {
@@ -136,8 +151,19 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def load(self, parent):
         self.parent = parent
 
-        with open(self.path, "r", encoding="UTF-8") as in_file:
-            self.code = in_file.read()
+        try:
+            with open(self.path, "r", encoding="UTF-8") as in_file:
+                self.code = in_file.read()
+        except IOError:
+            logger.exception("Error while loading script for " + self.description)
+            logger.error("SCRIPT not loaded (or loaded incomplete)")
+
+        try:
+            with open(self.get_match_path(), "r", encoding="UTF-8") as in_file:
+                self.match_code = in_file.read()
+        except IOError:
+            logger.exception("Error while loading script for " + self.description)
+            logger.error("SCRIPT not loaded (or loaded incomplete)")
 
         if os.path.exists(self.get_json_path()):
             self.load_from_serialized()
@@ -185,6 +211,7 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def copy(self, source_script):
         self.description = source_script.description
         self.code = source_script.code
+        self.match_code = source_script.match_code
 
         self.prompt = source_script.prompt
         self.omitTrigger = source_script.omitTrigger

@@ -67,8 +67,9 @@ class SettingsWidget(*inherits_from_ui_file_with_name("settingswidget")):
 
     def _load_window_filter_data(self, item: autokey.model.modelTypes.Item):
         self.window_filter_dialog.load(item)
-        item_has_window_filter = item.has_filter() or item.inherits_filter()
-        self.window_filter_label.setText(item.get_filter_regex() if item_has_window_filter else "(None configured)")
+        item_has_window_filter = item.has_applicable_filter()
+        # self.window_filter_label.setText(item.get_filter_display_text() if item_has_window_filter else "(None configured)")
+        self.window_filter_label.setText(item.get_filter_display_text())
         self.window_filter_enabled = item_has_window_filter
         self.clear_window_filter_button.setEnabled(item_has_window_filter)
 
@@ -116,9 +117,9 @@ class SettingsWidget(*inherits_from_ui_file_with_name("settingswidget")):
         if self.window_filter_enabled:
             filter_expression = self.window_filter_dialog.get_filter_text()
         elif self.current_item.parent is not None:
-            r = self.current_item.parent.get_applicable_regex(True)
+            r = self.current_item.parent.get_applicable_filter(True)
             if r is not None:
-                filter_expression = r.pattern
+                filter_expression = r.windowInfoRegex.pattern
 
         # Validate
         ret = []
@@ -128,7 +129,7 @@ class SettingsWidget(*inherits_from_ui_file_with_name("settingswidget")):
         for abbr in abbreviations:
             unique, conflicting = config_manager.check_abbreviation_unique(abbr, filter_expression, self.current_item)
             if not unique:
-                f = conflicting.get_applicable_regex()
+                f = conflicting.get_applicable_filter()
                 # TODO: i18n
                 if f is None:
                     msg = "The abbreviation {abbreviation} is already in use by the {conflicting_item}.".format(
@@ -140,13 +141,13 @@ class SettingsWidget(*inherits_from_ui_file_with_name("settingswidget")):
                           "for windows matching '{matching_pattern}'.".format(
                             abbreviation=abbr,
                             conflicting_item=str(conflicting),
-                            matching_pattern=f.pattern
+                            matching_pattern=f.windowInfoRegEx.pattern
                             )
                 ret.append(msg)
 
         unique, conflicting = config_manager.check_hotkey_unique(modifiers, key, filter_expression, self.current_item)
         if not unique:
-            f = conflicting.get_applicable_regex()
+            f = conflicting.get_applicable_filter()
             # TODO: i18n
             if f is None:
                 msg = "The hotkey '{hotkey}' is already in use by the {conflicting_item}.".format(
@@ -158,7 +159,7 @@ class SettingsWidget(*inherits_from_ui_file_with_name("settingswidget")):
                       "for windows matching '{matching_pattern}.".format(
                         hotkey=conflicting.get_hotkey_string(),
                         conflicting_item=str(conflicting),
-                        matching_pattern=f.pattern
+                        matching_pattern=f.windowInfoRegEx.pattern
                         )
             ret.append(msg)
 

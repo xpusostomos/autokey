@@ -239,7 +239,7 @@ Folders created within temporary folders must themselves be set temporary")
 
         self.monitor.suspend()
         try:
-            p = autokey.model.phrase.Phrase(name, contents)
+            p = autokey.model.phrase.Phrase(name, contents, '')
             if send_mode in autokey.model.phrase.SendMode:
                 p.sendMode = send_mode
             if abbreviations:
@@ -289,7 +289,7 @@ Folders created within temporary folders must themselves be set temporary")
             raise Exception("The specified abbreviation is already in use")
 
         self.monitor.suspend()
-        p = autokey.model.phrase.Phrase(description, contents)
+        p = autokey.model.phrase.Phrase(description, contents, '')
         p.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
         p.abbreviations = [abbr]
         folder.add_item(p)
@@ -330,7 +330,7 @@ Folders created within temporary folders must themselves be set temporary")
             raise Exception("The specified hotkey and modifier combination is already in use")
 
         self.monitor.suspend()
-        p = autokey.model.phrase.Phrase(description, contents)
+        p = autokey.model.phrase.Phrase(description, contents, '')
         p.modes.append(autokey.model.helpers.TriggerMode.HOTKEY)
         p.set_hotkey(modifiers, key)
         folder.add_item(p)

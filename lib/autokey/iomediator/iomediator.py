@@ -47,6 +47,7 @@ class IoMediator(threading.Thread):
         self.queue = queue.Queue()
         self.listeners.append(service)
         self.interfaceType = ConfigManager.SETTINGS[INTERFACE_TYPE]
+        self.service = service
         
         # Modifier tracking
         self.modifiers = {

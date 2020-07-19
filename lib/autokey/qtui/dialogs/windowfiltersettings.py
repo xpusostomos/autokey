@@ -45,10 +45,10 @@ class WindowFilterSettingsDialog(*ui_common.inherits_from_ui_file_with_name("win
         else:
             self.apply_recursive_check_box.show()
 
-        if not item.has_filter():
+        if not item.has_filter():  #TODO CJB
             self.reset()
         else:
-            self.trigger_regex_line_edit.setText(item.get_filter_regex())
+            self.trigger_regex_line_edit.setText(item.get_filter_display_text())
             self.apply_recursive_check_box.setChecked(item.isRecursive)
 
     def save(self, item):
@@ -59,6 +59,7 @@ class WindowFilterSettingsDialog(*ui_common.inherits_from_ui_file_with_name("win
             logger.error(
                 "Invalid window filter regex: '{}'. Discarding without saving.".format(regex)
             )
+        #TODO CJB set item.match_code
         item.set_filter_recursive(self.get_is_recursive())
 
     def get_is_recursive(self):

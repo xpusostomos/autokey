@@ -28,6 +28,8 @@ import autokey.model.helpers
 import autokey.model.phrase
 import autokey.model.script
 
+from ..model.abstract_window_filter import AbstractWindowFilter
+
 require_version('Gtk', '3.0')
 require_version('GtkSource', '3.0')
 
@@ -158,15 +160,12 @@ class SettingsWidget:
         self.filterDialog.load(self.currentItem)
         self.filterEnabled = False
         self.clearFilterButton.set_sensitive(False)
-        if item.has_filter() or item.inherits_filter():
-            self.windowFilterLabel.set_text(item.get_filter_regex())
 
+        self.windowFilterLabel.set_text(item.get_filter_display_text())
+        if item.has_applicable_filter():
             if not item.inherits_filter():
                 self.clearFilterButton.set_sensitive(True)
                 self.filterEnabled = True
-
-        else:
-            self.windowFilterLabel.set_text(_("(None configured)"))
 
     def save(self):
         # Perform hotkey ungrab
@@ -207,9 +206,10 @@ class SettingsWidget:
         if self.filterEnabled:
             filterExpression = self.filterDialog.get_filter_text()
         elif self.currentItem.parent is not None:
-            r = self.currentItem.parent.get_applicable_regex(True)
+            r = self.currentItem.parent.get_applicable_filter(True)
             if r is not None:
-                filterExpression = r.pattern
+                filterExpression = r.windowInfoRegex.pattern
+                #TODO CJB
 
         # Validate
         ret = []
@@ -220,7 +220,7 @@ class SettingsWidget:
             unique, conflicting = configManager.check_abbreviation_unique(abbr, filterExpression, self.currentItem)
             if not unique:
                 msg = _("The abbreviation '%s' is already in use by the %s") % (abbr, str(conflicting))
-                f = conflicting.get_applicable_regex()
+                f = conflicting.get_applicable_filter()
                 if f is not None:
                     msg += _(" for windows matching '%s'.") % f.pattern
                 ret.append(msg)
@@ -228,9 +228,9 @@ class SettingsWidget:
         unique, conflicting = configManager.check_hotkey_unique(modifiers, key, filterExpression, self.currentItem)
         if not unique:
             msg = _("The hotkey '%s' is already in use by the %s") % (conflicting.get_hotkey_string(), str(conflicting))
-            f = conflicting.get_applicable_regex()
+            f = conflicting.get_applicable_filter()
             if f is not None:
-                msg += _(" for windows matching '%s'.") % f.pattern
+                msg += _(" for windows matching '%s'.") % f.windowInfoRegex.pattern
             ret.append(msg)
 
         return ret
@@ -282,10 +282,11 @@ class SettingsWidget:
         self.set_dirty()
         self.filterEnabled = False
         self.clearFilterButton.set_sensitive(False)
-        if self.currentItem.inherits_filter():
-            text = self.currentItem.parent.get_child_filter()
-        else:
-            text = _("(None configured)")
+        #TODO CJB this is all wrong now
+        # if self.currentItem.inherits_filter():
+        text = self.currentItem.parent.get_filter_display_text()
+        # else:
+        #     text = "(None configured)")
         self.windowFilterLabel.set_text(text)
         self.filterDialog.reset()
 
@@ -293,17 +294,21 @@ class SettingsWidget:
         if res == Gtk.ResponseType.OK:
             self.set_dirty()
             filterText = self.filterDialog.get_filter_text()
-            if filterText != "":
+            buf = self.filterDialog.match_script_buffer
+            match_code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+            if filterText != "" or match_code != "":
                 self.filterEnabled = True
                 self.clearFilterButton.set_sensitive(True)
-                self.windowFilterLabel.set_text(filterText)
+                self.windowFilterLabel.set_text(AbstractWindowFilter.get_filter_display_text_from(filterText, match_code))
+                # self.windowFilterLabel.set_text(self.currentItem.get_filter_display_text())
             else:
                 self.filterEnabled = False
                 self.clearFilterButton.set_sensitive(False)
-                if self.currentItem.inherits_filter():
-                    text = self.currentItem.parent.get_child_filter()
-                else:
-                    text = _("(None configured)")
+                # if self.currentItem.inherits_filter():
+                    # text = self.currentItem.parent.get_child_filter()
+                text = self.currentItem.parent.get_filter_display_text()
+                # else:
+                #     text = _("(None configured)")
                 self.windowFilterLabel.set_text(text)
 
     def __getattr__(self, attr):
@@ -1050,7 +1055,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents")
+            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents", "# Enter match code")
             newIter = theModel.append_item(newPhrase, parentIter)
             newPhrase.persist()
             self.app.monitor.unsuspend()
@@ -1066,7 +1071,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newScript = autokey.model.script.Script(name, "# Enter script code")
+            newScript = autokey.model.script.Script(name, "# Enter script code", "# Enter match code")
             newIter = theModel.append_item(newScript, parentIter)
             newScript.persist()
             self.app.monitor.unsuspend()
@@ -1102,9 +1107,9 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
 
         for source in sourceObjects:
             if isinstance(source, autokey.model.phrase.Phrase):
-                newObj = autokey.model.phrase.Phrase('', '')
+                newObj = autokey.model.phrase.Phrase('', '', '')
             else:
-                newObj = autokey.model.script.Script('', '')
+                newObj = autokey.model.script.Script('', '', '')
             newObj.copy(source)
             self.cutCopiedItems.append(newObj)
 
@@ -1141,9 +1146,9 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         self.app.monitor.suspend()
 
         if isinstance(source, autokey.model.phrase.Phrase):
-            newObj = autokey.model.phrase.Phrase('', '')
+            newObj = autokey.model.phrase.Phrase('', '', '')
         else:
-            newObj = autokey.model.script.Script('', '')
+            newObj = autokey.model.script.Script('', '', '')
         newObj.copy(source)
         newObj.persist()
 

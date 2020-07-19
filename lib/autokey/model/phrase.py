@@ -20,7 +20,7 @@ import os
 import typing
 
 from autokey.model.key import NAVIGATION_KEYS, Key, KEY_SPLIT_RE
-from autokey.model.helpers import JSON_FILE_PATTERN, get_safe_path, TriggerMode
+from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
@@ -33,12 +33,13 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     Encapsulates all data and behaviour for a phrase.
     """
 
-    def __init__(self, description, phrase, path=None):
+    def __init__(self, description, phrase, match_code, path=None):
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.phrase = phrase
+        self.match_code = match_code
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
         self.prompt = False
@@ -60,6 +61,10 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def get_json_path(self):
         directory, base_name = os.path.split(self.path[:-4])
         return JSON_FILE_PATTERN.format(directory, base_name)
+
+    def get_match_path(self):
+        directory, base_name = os.path.split(self.path[:-4])
+        return MATCH_FILE_PATTERN.format(directory, base_name)
 
     def persist(self):
         if self.path is None:

@@ -20,6 +20,7 @@ import re
 
 DEFAULT_WORDCHAR_REGEX = '[\w]'
 JSON_FILE_PATTERN = "{}/.{}.json"
+MATCH_FILE_PATTERN = "{}/{}.match.py"
 SPACES_RE = re.compile(r"^ | $")
 
 

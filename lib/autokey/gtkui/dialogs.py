@@ -37,6 +37,7 @@ __all__ = ["validate", "EMPTY_FIELD_REGEX", "AbbrSettingsDialog", "HotkeySetting
 from autokey import model
 from autokey.model.key import Key
 from .configwindow0 import get_ui
+from gi.repository import Gtk, Pango, GtkSource, Gdk, Gio
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -585,7 +586,7 @@ class GlobalHotkeyDialog(HotkeySettingsDialog):
     def valid(self):
         configManager = self.configManager
         modifiers = self.build_modifiers()
-        regex = self.targetItem.get_applicable_regex()
+        regex = self.targetItem.get_applicable_filter().windowInfoRegex
         pattern = None
         if regex is not None:
             pattern = regex.pattern
@@ -620,6 +621,25 @@ class WindowFilterSettingsDialog(DialogBase):
         self.recursiveButton = builder.get_object("recursiveButton")
         self.detectButton = builder.get_object("detectButton")
 
+        self.match_script_buffer = GtkSource.Buffer()
+        # self.match_script_buffer.connect("changed", self.on_modified)
+        self.match_script_editor = GtkSource.View.new_with_buffer(self.match_script_buffer)
+        scrolledWindow = builder.get_object("scrolledWindow")
+        scrolledWindow.hide()
+        scrolledWindow.add(self.match_script_editor)
+        scrolledWindow.show_all()
+
+        # self.textView = builder.get_object("textView")
+
+        self.__m = GtkSource.LanguageManager()
+        self.__sm = GtkSource.StyleSchemeManager()
+        self.match_script_buffer.set_language(self.__m.get_language("python"))
+        self.match_script_buffer.set_style_scheme(self.__sm.get_scheme("classic"))
+        self.match_script_editor.set_auto_indent(True)
+        self.match_script_editor.set_smart_home_end(True)
+        self.match_script_editor.set_insert_spaces_instead_of_tabs(True)
+        self.match_script_editor.set_tab_width(4)
+
         DialogBase.__init__(self)
 
     def load(self, item):
@@ -633,8 +653,16 @@ class WindowFilterSettingsDialog(DialogBase):
         if not item.has_filter():
             self.reset()
         else:
-            self.triggerRegexEntry.set_text(item.get_filter_regex())
+            self.triggerRegexEntry.set_text(item.get_filter_display_text())
             self.recursiveButton.set_active(item.isRecursive)
+
+        self.match_script_buffer.begin_not_undoable_action()
+        self.match_script_buffer.set_text(item.match_code)
+        # self.match_script_buffer.set_text(theScript.code.encode("utf-8"))
+        self.match_script_buffer.end_not_undoable_action()
+        self.match_script_buffer.place_cursor(self.match_script_buffer.get_start_iter())
+
+        # self.textView.get_buffer().set_text(item.match_code)
 
     # It seriously bugs me how much duplication there is between the two GUIs.
     def save(self, item):
@@ -645,7 +673,10 @@ class WindowFilterSettingsDialog(DialogBase):
             logger.error(
                 "Invalid window filter regex: '{}'. Discarding without saving.".format(regex)
             )
-        item.set_filter_recursive(self.get_is_recursive())
+
+        buf = self.match_script_buffer
+        item.match_code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+        item.set_filter_recursive(self.get_is_recursive())    # TODO CJB
 
     def reset(self):
         self.triggerRegexEntry.set_text("")

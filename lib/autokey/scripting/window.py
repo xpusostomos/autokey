@@ -31,6 +31,7 @@ class Window:
 
     def __init__(self, mediator):
         self.mediator = mediator
+        self.match = False
 
     def wait_for_focus(self, title, timeOut=5):
         """

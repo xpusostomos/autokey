@@ -32,7 +32,6 @@ if typing.TYPE_CHECKING:
     from autokey.iomediator.iomediator import IoMediator
 import autokey.configmanager.configmanager_constants as cm_constants
 
-
 # Imported to enable threading in Xlib. See module description. Not an unused import statement.
 import Xlib.threaded as xlib_threaded
 
@@ -203,7 +202,7 @@ class XInterfaceBase(threading.Thread):
         self.lastChars = [] # QT4 Workaround
         self.__enableQT4Workaround = False # QT4 Workaround
         self.shutdown = False
-        
+
         # Event loop
         self.eventThread = threading.Thread(target=self.__eventLoop)
         self.queue = queue.Queue()
@@ -368,12 +367,15 @@ class XInterfaceBase(threading.Thread):
 
         # Grab hotkeys without a filter in root window
         for item in hotkeys:
-            if item.get_applicable_regex() is None:
+            if item.has_applicable_filter():
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__enqueue(self.__grabRecurse, item, self.rootWindow, False)
 
         self.__enqueue(self.__recurseTree, self.rootWindow, hotkeys)
+
+    def matches(self, item, window_info):
+        return self.mediator.service.matches(item, window_info)
 
     def __recurseTree(self, parent, hotkeys):
         # Grab matching hotkeys in all open child windows
@@ -388,7 +390,7 @@ class XInterfaceBase(threading.Thread):
                 
                 if window_info.wm_title or window_info.wm_class:
                     for item in hotkeys:
-                        if item.get_applicable_regex() is not None and item._should_trigger_window_title(window_info):
+                        if item.has_applicable_filter():
                             self.__grabHotkey(item.hotKey, item.modifiers, window)
                             self.__grabRecurse(item, window, False)
                         
@@ -412,7 +414,7 @@ class XInterfaceBase(threading.Thread):
         
         # Ungrab hotkeys without a filter in root window, recursively
         for item in hotkeys:
-            if item.get_applicable_regex() is None:
+            if item.has_applicable_filter():
                 self.__ungrabHotkey(item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__ungrabRecurse(item, self.rootWindow, False)
@@ -432,7 +434,7 @@ class XInterfaceBase(threading.Thread):
                 
                 if window_info.wm_title or window_info.wm_class:
                     for item in hotkeys:
-                        if item.get_applicable_regex() is not None and item._should_trigger_window_title(window_info):
+                        if item.has_applicable_filter() and self.matches(item, window_info):
                             self.__ungrabHotkey(item.hotKey, item.modifiers, window)
                             self.__ungrabRecurse(item, window, False)
                         
@@ -450,7 +452,7 @@ class XInterfaceBase(threading.Thread):
         hotkeys = c.hotKeys + c.hotKeyFolders
         window_info = self.get_window_info(window)
         for item in hotkeys:
-            if item.get_applicable_regex() is not None and item._should_trigger_window_title(window_info):
+            if item.has_applicable_filter():
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, window)
             elif self.__needsMutterWorkaround(item):
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, window)
@@ -487,7 +489,7 @@ class XInterfaceBase(threading.Thread):
         If the hotkey has no filter regex, it is global and is grabbed recursively from the root window
         If it has a filter regex, iterate over all children of the root and grab from matching windows
         """
-        if item.get_applicable_regex() is None:
+        if not item.has_applicable_filter():
             self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, self.rootWindow)
             if self.__needsMutterWorkaround(item):
                 self.__enqueue(self.__grabRecurse, item, self.rootWindow, False)
@@ -505,7 +507,7 @@ class XInterfaceBase(threading.Thread):
             
             if checkWinInfo:
                 window_info = self.get_window_info(window, False)
-                shouldTrigger = item._should_trigger_window_title(window_info)
+                shouldTrigger = self.matches(item, window_info)
 
             if shouldTrigger or not checkWinInfo:
                 self.__grabHotkey(item.hotKey, item.modifiers, window)
@@ -523,7 +525,7 @@ class XInterfaceBase(threading.Thread):
         import copy
         newItem = copy.copy(item)
         
-        if item.get_applicable_regex() is None:
+        if not item.has_applicable_filter():
             self.__enqueue(self.__ungrabHotkey, newItem.hotKey, newItem.modifiers, self.rootWindow)
             if self.__needsMutterWorkaround(item):
                 self.__enqueue(self.__ungrabRecurse, newItem, self.rootWindow, False)
@@ -541,7 +543,7 @@ class XInterfaceBase(threading.Thread):
             
             if checkWinInfo:
                 window_info = self.get_window_info(window, False)
-                shouldTrigger = item._should_trigger_window_title(window_info)
+                shouldTrigger = self.matches(item, window_info)
 
             if shouldTrigger or not checkWinInfo:
                 self.__ungrabHotkey(item.hotKey, item.modifiers, window)

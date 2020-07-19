@@ -119,14 +119,14 @@ class FileMonitor(threading.Thread):
             except IndexError:
                 break       
         
-    def run(self):        
+    def run(self):
         while not self.event.isSet():
             self.notifier.process_events()
             if self.notifier.check_events(1000):
                 self.notifier.read_events()
-        
+
         logger.info("Shutting down file monitor")
-        self.notifier.stop()        
+        self.notifier.stop()
         
     def stop(self):
         self.event.set()

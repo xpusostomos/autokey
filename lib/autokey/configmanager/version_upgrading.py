@@ -96,7 +96,7 @@ def _convert_v0_70_to_v0_80_folder(folder_data, parent):
     for itemData in folder_data["items"]:
         i = None
         if itemData["type"] == "script":
-            i = autokey.model.script.Script("", "")
+            i = autokey.model.script.Script("", "", "")
             i.code = itemData["code"]
         elif itemData["type"] == "phrase":
             i = autokey.model.phrase.Phrase("", "")

@@ -125,6 +125,16 @@ class Service:
         # Clear last to prevent undo of previous phrase in unexpected places
         self.phraseRunner.clear_last()
 
+    def matches(self, item, window_info):
+        if not item.has_applicable_filter():
+            return True
+        elif item.windowInfoRegex is not None:
+            return item._should_trigger_window_title(window_info)
+        elif item.match_code != '':
+            scope = self.scriptRunner.scope.copy()
+            self.scriptRunner.execute_match(item, scope)
+            return scope["window"].match
+
     def handle_keypress(self, rawKey, modifiers, key, window_info):
         logger.debug("Raw key: %r, modifiers: %r, Key: %s", rawKey, modifiers, key)
         logger.debug("Window visible title: %r, Window class: %r" % window_info)
@@ -139,7 +149,7 @@ class Service:
             menu = None
 
             for item in self.configManager.hotKeys:
-                if item.check_hotkey(modifiers, rawKey, window_info):
+                if item.check_hotkey(modifiers, rawKey, window_info) and self.matches(item, window_info): #TODO CJB
                     itemMatch = item
                     break
 
@@ -501,6 +511,18 @@ class ScriptRunner:
         self.mediator.send_string(trigger_character)
 
     @threaded
+    def execute_match(self, script: autokey.model.script.Script, scope, buffer=''):
+        logger.debug("Script runner executing match: %r", script)
+
+        scope["store"] = script.store
+        if script.path is not None:
+            # Overwrite __file__ to contain the path to the user script instead of the path to this service.py file.
+            scope["__file__"] = script.get_match_path()
+        self._execute_match(scope, script)
+        # It would be nice to return the result here, but @threaded eats the return
+        #print("match result: " + str(scope["window"].match))
+
+    @threaded
     def execute_path(self, path: pathlib.Path):
         logger.debug("Script runner executing: {}".format(path))
         scope = self.scope.copy()
@@ -527,9 +549,24 @@ class ScriptRunner:
         except Exception:  # Catch everything raised by the User code. Those Exceptions must not crash the thread.
             self._record_error(script, start_time)
 
+    def _execute_match(self, scope, script: typing.Union[autokey.model.script.Script, pathlib.Path]):
+        start_time = datetime.datetime.now().time()
+        # noinspection PyBroadException
+        try:
+            compiled_code = self._compile_match(script)
+            exec(compiled_code, scope)
+        except Exception:  # Catch everything raised by the User code. Those Exceptions must not crash the thread.
+            self._record_error(script, start_time)
+
     @staticmethod
     def _compile_script(script: typing.Union[autokey.model.script.Script, pathlib.Path]):
         script_code, script_name = ScriptRunner._get_script_source_code_and_name(script)
+        compiled_code = compile(script_code, script_name, 'exec')
+        return compiled_code
+
+    @staticmethod
+    def _compile_match(script: typing.Union[autokey.model.script.Script, pathlib.Path]):
+        script_code, script_name = ScriptRunner._get_match_source_code_and_name(script)
         compiled_code = compile(script_code, script_name, 'exec')
         return compiled_code
 
@@ -544,6 +581,23 @@ class ScriptRunner:
                 script_name = "<string>"
             else:
                 script_name = str(script.path)
+        else:
+            raise TypeError(
+                "Unknown script type passed in, expected one of [autokey.model.Script, pathlib.Path], got {}".format(
+                    type(script)))
+        return script_code, script_name
+
+    @staticmethod
+    def _get_match_source_code_and_name(script: typing.Union[autokey.model.script.Script, pathlib.Path]) -> typing.Tuple[str, str]:
+        if isinstance(script, pathlib.Path):
+            script_code = script.read_text()
+            script_name = str(script)
+        elif isinstance(script, autokey.model.script.Script):
+            script_code = script.match_code
+            if script.path is None:
+                script_name = "<string>"
+            else:
+                script_name = str(script.get_match_path())
         else:
             raise TypeError(
                 "Unknown script type passed in, expected one of [autokey.model.Script, pathlib.Path], got {}".format(

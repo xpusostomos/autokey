@@ -146,7 +146,7 @@ def _create_script(data: ItemData, parent: Folder) -> Script:
 
     with open(str(content_path), "r", encoding="utf-8") as source_file:
         source_code = source_file.read()
-    item = Script(data.name, source_code)
+    item = Script(data.name, source_code, "") # TODO CJB
     if data.hotkey:
         item.set_hotkey(*data.hotkey)
     for abbreviation in data.abbreviations:
@@ -163,7 +163,7 @@ def _create_script(data: ItemData, parent: Folder) -> Script:
 def _create_phrase(data: ItemData, parent: Folder) -> Phrase:
     """Create a Phrase from data. Place it into the parent folder."""
     logger.debug("Creating Phrase: name={}".format(data.name))
-    item = Phrase(data.name, data.content)
+    item = Phrase(data.name, data.content, "")
     if data.hotkey:
         item.set_hotkey(*data.hotkey)
     for abbreviation in data.abbreviations:
