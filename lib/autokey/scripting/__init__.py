@@ -31,6 +31,7 @@ from .mouse import Mouse
 from autokey.model.store import Store
 from .system import System
 from .window import Window
+from .match_window import MatchWindow
 
 # Platform abstraction
 if autokey.common.USING_QT:

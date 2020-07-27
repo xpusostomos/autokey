@@ -25,6 +25,8 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
+from lib.autokey.script_runner import ScriptRunner, SimpleScript
+
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
@@ -39,7 +41,7 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.phrase = phrase
-        self.match_code = match_code
+        self.match_script = SimpleScript('', '')
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
         self.prompt = False
@@ -58,11 +60,13 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             base_name = base_name[:-4]
         self.path = get_safe_path(self.parent.path, base_name, ".txt")
 
-    def get_json_path(self):
+    @property
+    def json_path(self):
         directory, base_name = os.path.split(self.path[:-4])
         return JSON_FILE_PATTERN.format(directory, base_name)
 
-    def get_match_path(self):
+    @property
+    def match_path(self):
         directory, base_name = os.path.split(self.path[:-4])
         return MATCH_FILE_PATTERN.format(directory, base_name)
 
@@ -70,11 +74,20 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         if self.path is None:
             self.build_path()
 
-        with open(self.get_json_path(), 'w') as json_file:
+        with open(self.json_path, 'w') as json_file:
             json.dump(self.get_serializable(), json_file, indent=4)
 
         with open(self.path, "w") as out_file:
             out_file.write(self.phrase)
+
+        if self.match_script.code == '':
+            try:
+                os.remove(self.match_path)
+            except FileNotFoundError:
+                pass
+        else:
+            with open(self.match_path, "w") as out_file:
+                out_file.write(self.match_script.code)
 
     def get_serializable(self):
         d = {
@@ -99,14 +112,23 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         with open(self.path, "r") as inFile:
             self.phrase = inFile.read()
 
-        if os.path.exists(self.get_json_path()):
+        try:
+            with open(self.match_path, "r", encoding="UTF-8") as in_file:
+                self.match_script.code = in_file.read()
+        except FileNotFoundError:
+            pass
+        except IOError:
+            logger.exception("Error while loading script for " + self.description)
+            logger.error("SCRIPT not loaded (or loaded incomplete)")
+
+        if os.path.exists(self.json_path):
             self.load_from_serialized()
         else:
             self.description = os.path.basename(self.path)[:-4]
 
     def load_from_serialized(self):
         try:
-            with open(self.get_json_path(), "r") as json_file:
+            with open(self.json_path, "r") as json_file:
                 data = json.load(json_file)
                 self.inject_json_data(data)
         except Exception:
@@ -129,10 +151,10 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def rebuild_path(self):
         if self.path is not None:
             old_name = self.path
-            old_json = self.get_json_path()
+            old_json = self.json_path
             self.build_path()
             os.rename(old_name, self.path)
-            os.rename(old_json, self.get_json_path())
+            os.rename(old_json, self.json_path)   #TODO CJB
         else:
             self.build_path()
 
@@ -140,12 +162,13 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         if self.path is not None:
             if os.path.exists(self.path):
                 os.remove(self.path)
-            if os.path.exists(self.get_json_path()):
-                os.remove(self.get_json_path())
+            if os.path.exists(self.json_path):
+                os.remove(self.json_path)   # TODO CJB
 
     def copy(self, source_phrase):
         self.description = source_phrase.description
         self.phrase = source_phrase.phrase
+        self.match_script = SimpleScript(source_phrase.match_script.path, source_phrase.match_script.code)
 
         # TODO - re-enable me if restoring predictive functionality
         #if TriggerMode.PREDICTIVE in source_phrase.modes:
@@ -166,9 +189,9 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def set_modes(self, modes: typing.List[TriggerMode]):
         self.modes = modes
 
-    def check_input(self, buffer, window_info):
+    def check_input(self, buffer, window_info, script_runner: ScriptRunner):
         if TriggerMode.ABBREVIATION in self.modes:
-            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info)
+            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info, script_runner)
         else:
             return False
 

@@ -246,8 +246,8 @@ Folders created within temporary folders must themselves be set temporary")
                 p.add_abbreviations(abbreviations)
             if hotkey:
                 p.set_hotkey(*hotkey)
-            if window_filter:
-                p.set_window_titles(window_filter)
+            # if window_filter:   #TODO CJB this is a big problem, seems the API exposed the simple filter
+            #     p.set_window_titles(window_filter)
             p.show_in_tray_menu = show_in_system_tray
             p.prompt = always_prompt
             p.temporary = temporary

@@ -31,7 +31,6 @@ class Window:
 
     def __init__(self, mediator):
         self.mediator = mediator
-        self.match = False
 
     def wait_for_focus(self, title, timeOut=5):
         """
@@ -237,6 +236,14 @@ class Window:
         @return: the class of the currentle active window
         @rtype: C{str}
         """
+        return self.mediator.interface.get_window_class()
+
+    @property
+    def active_title(self):
+        return self.mediator.interface.get_window_title()
+
+    @property
+    def active_class(self):
         return self.mediator.interface.get_window_class()
 
     def _run_wmctrl(self, args):

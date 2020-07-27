@@ -143,7 +143,7 @@ class SettingsWidget:
             self.clearAbbrButton.set_sensitive(True)
             self.abbrEnabled = True
         else:
-            self.abbrLabel.set_text(_("(None configured)"))
+            self.abbrLabel.set_text(_(AbstractWindowFilter.NONE_CONFIGURED))
             self.clearAbbrButton.set_sensitive(False)
             self.abbrEnabled = False
 
@@ -153,7 +153,7 @@ class SettingsWidget:
             self.clearHotkeyButton.set_sensitive(True)
             self.hotkeyEnabled = True
         else:
-            self.hotkeyLabel.set_text(_("(None configured)"))
+            self.hotkeyLabel.set_text(_(AbstractWindowFilter.NONE_CONFIGURED))
             self.clearHotkeyButton.set_sensitive(False)
             self.hotkeyEnabled = False
 
@@ -173,16 +173,16 @@ class SettingsWidget:
             self.parentWindow.app.hotkey_removed(self.currentItem)
 
         self.currentItem.set_modes([])
-        if self.abbrEnabled:
-            self.abbrDialog.save(self.currentItem)
-        if self.hotkeyEnabled:
-            self.hotkeyDialog.save(self.currentItem)
-        if self.filterEnabled:
-            self.filterDialog.save(self.currentItem)
-        else:
-            self.currentItem.set_window_titles(None)
+        # if self.abbrEnabled:
+        self.abbrDialog.save(self.currentItem)
+        # if self.hotkeyEnabled:
+        self.hotkeyDialog.save(self.currentItem)
+        # if self.filterEnabled:
+        self.filterDialog.save(self.currentItem)
+        # else: #TODO CJB why did this exist
+        #     self.currentItem.set_window_titles(None)
 
-        if self.hotkeyEnabled:
+        if self.hotkeyEnabled:  #TODO CJB what does this do
             self.parentWindow.app.hotkey_created(self.currentItem)
 
     def set_dirty(self):
@@ -203,35 +203,35 @@ class SettingsWidget:
             key = None
 
         filterExpression = None
-        if self.filterEnabled:
-            filterExpression = self.filterDialog.get_filter_text()
-        elif self.currentItem.parent is not None:
-            r = self.currentItem.parent.get_applicable_filter(True)
-            if r is not None:
-                filterExpression = r.windowInfoRegex.pattern
+        # if self.filterEnabled:
+        #     filterExpression = self.filterDialog.get_filter_text()
+        # elif self.currentItem.parent is not None:
+        #     r = self.currentItem.parent.get_applicable_filter(True)
+            # if r is not None:
+            #     filterExpression = r.windowInfoRegex.pattern
                 #TODO CJB
 
         # Validate
         ret = []
-
-        configManager = self.parentWindow.app.configManager
-
-        for abbr in abbreviations:
-            unique, conflicting = configManager.check_abbreviation_unique(abbr, filterExpression, self.currentItem)
-            if not unique:
-                msg = _("The abbreviation '%s' is already in use by the %s") % (abbr, str(conflicting))
-                f = conflicting.get_applicable_filter()
-                if f is not None:
-                    msg += _(" for windows matching '%s'.") % f.pattern
-                ret.append(msg)
-
-        unique, conflicting = configManager.check_hotkey_unique(modifiers, key, filterExpression, self.currentItem)
-        if not unique:
-            msg = _("The hotkey '%s' is already in use by the %s") % (conflicting.get_hotkey_string(), str(conflicting))
-            f = conflicting.get_applicable_filter()
-            if f is not None:
-                msg += _(" for windows matching '%s'.") % f.windowInfoRegex.pattern
-            ret.append(msg)
+        #
+        # configManager = self.parentWindow.app.configManager
+        #
+        # for abbr in abbreviations:
+        #     unique, conflicting = configManager.check_abbreviation_unique(abbr, filterExpression, self.currentItem)
+        #     if not unique:
+        #         msg = _("The abbreviation '%s' is already in use by the %s") % (abbr, str(conflicting))
+        #         f = conflicting.get_applicable_filter()
+        #         if f is not None:
+        #             msg += _(" for windows matching '%s'.") % f.pattern
+        #         ret.append(msg)
+        #
+        # unique, conflicting = configManager.check_hotkey_unique(modifiers, key, filterExpression, self.currentItem)
+        # if not unique:
+        #     msg = _("The hotkey '%s' is already in use by the %s") % (conflicting.get_hotkey_string(), str(conflicting))
+        #     f = conflicting.get_applicable_filter()
+        #     if f is not None:
+        #         msg += _(" for windows matching '%s'.") % f.windowInfoRegex.pattern
+        #     ret.append(msg)
 
         return ret
 
@@ -252,7 +252,7 @@ class SettingsWidget:
         self.set_dirty()
         self.abbrEnabled = False
         self.clearAbbrButton.set_sensitive(False)
-        self.abbrLabel.set_text(_("(None configured)"))
+        self.abbrLabel.set_text(_(AbstractWindowFilter.NONE_CONFIGURED))
         self.abbrDialog.reset()
 
     def on_setHotkeyButton_clicked(self, widget, data=None):
@@ -271,7 +271,7 @@ class SettingsWidget:
         self.set_dirty()
         self.hotkeyEnabled = False
         self.clearHotkeyButton.set_sensitive(False)
-        self.hotkeyLabel.set_text(_("(None configured)"))
+        self.hotkeyLabel.set_text(_(AbstractWindowFilter.NONE_CONFIGURED))
         self.hotkeyDialog.reset()
 
     def on_setFilterButton_clicked(self, widget, data=None):
@@ -284,7 +284,9 @@ class SettingsWidget:
         self.clearFilterButton.set_sensitive(False)
         #TODO CJB this is all wrong now
         # if self.currentItem.inherits_filter():
-        text = self.currentItem.parent.get_filter_display_text()
+        text = AbstractWindowFilter.NONE_CONFIGURED
+        if self.currentItem.parent is not None:
+            text = self.currentItem.parent.get_filter_display_text()
         # else:
         #     text = "(None configured)")
         self.windowFilterLabel.set_text(text)
@@ -293,13 +295,14 @@ class SettingsWidget:
     def on_filter_dialog_response(self, res):
         if res == Gtk.ResponseType.OK:
             self.set_dirty()
-            filterText = self.filterDialog.get_filter_text()
+            # filterText = self.filterDialog.get_filter_text()
             buf = self.filterDialog.match_script_buffer
             match_code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
-            if filterText != "" or match_code != "":
+            # if filterText != "" or match_code != "":
+            if match_code != "":
                 self.filterEnabled = True
                 self.clearFilterButton.set_sensitive(True)
-                self.windowFilterLabel.set_text(AbstractWindowFilter.get_filter_display_text_from(filterText, match_code))
+                self.windowFilterLabel.set_text(AbstractWindowFilter.get_filter_display_text_from(match_code))
                 # self.windowFilterLabel.set_text(self.currentItem.get_filter_display_text())
             else:
                 self.filterEnabled = False
@@ -464,7 +467,7 @@ class ScriptPage:
         self.currentItem = theScript
 
         self.buffer.begin_not_undoable_action()
-        self.buffer.set_text(theScript.code)
+        self.buffer.set_text(theScript.script.code)
         # self.buffer.set_text(theScript.code.encode("utf-8"))
         self.buffer.end_not_undoable_action()
         self.buffer.place_cursor(self.buffer.get_start_iter())
@@ -480,7 +483,7 @@ class ScriptPage:
             set_linkbutton(self.linkButton, self.currentItem.path)
 
     def save(self):
-        self.currentItem.code = self.buffer.get_text(self.buffer.get_start_iter(), self.buffer.get_end_iter(), False)
+        self.currentItem.script.code = self.buffer.get_text(self.buffer.get_start_iter(), self.buffer.get_end_iter(), False)
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
@@ -1055,7 +1058,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents", "# Enter match code")
+            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents", "")
             newIter = theModel.append_item(newPhrase, parentIter)
             newPhrase.persist()
             self.app.monitor.unsuspend()
@@ -1071,7 +1074,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newScript = autokey.model.script.Script(name, "# Enter script code", "# Enter match code")
+            newScript = autokey.model.script.Script(name, "", "")
             newIter = theModel.append_item(newScript, parentIter)
             newScript.persist()
             self.app.monitor.unsuspend()
@@ -1268,7 +1271,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
     def __runScript(self):
         script = self.__getTreeSelection()[0]
         time.sleep(2)
-        self.app.service.scriptRunner.execute_script(script)
+        self.app.service.scriptRunner.execute_script(script.script)
 
     # Help Menu
 

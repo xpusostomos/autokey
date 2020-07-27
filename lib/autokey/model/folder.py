@@ -23,11 +23,14 @@ import typing
 from autokey.configmanager import configmanager_constants as cm_constants
 from autokey.model.phrase import Phrase
 from autokey.model.script import Script
-from autokey.model.helpers import get_safe_path, TriggerMode
+from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
+from lib.autokey.model.store import Store
+# from lib.autokey.service import ScriptRunner
+from lib.autokey.script_runner import ScriptRunner, SimpleScript
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -44,6 +47,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         AbstractWindowFilter.__init__(self)
         self.title = title
         self.folders = []
+        self.store = Store()  # For match scripts
         self.items = []  # type: typing.List[Item]
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
@@ -51,7 +55,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.parent = None  # type: typing.Optional[Folder]
         self.path = path
         self.temporary = False
-        self.match_code = ''
+        self.match_script = SimpleScript('', '')
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -72,6 +76,15 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         with open(self.path + "/.folder.json", 'w') as outFile:
             json.dump(self.get_serializable(), outFile, indent=4)
 
+        if self.match_script.code == '':
+            try:
+                os.remove(self.match_path)
+            except FileNotFoundError:
+                pass
+        else:
+            with open(self.match_path, "w") as out_file:
+                out_file.write(self.match_script.code)
+
     def get_serializable(self):
         d = {
             "type": "folder",
@@ -88,10 +101,20 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def load(self, parent=None):
         self.parent = parent
 
-        if os.path.exists(self.get_json_path()):
+        try:
+            with open(self.match_path, "r", encoding="UTF-8") as in_file:
+                self.match_script.code = in_file.read()
+        except FileNotFoundError:
+            pass
+        except IOError:
+            logger.exception("Error while loading script for " + self.description)
+            logger.error("SCRIPT not loaded (or loaded incomplete)")
+
+        if os.path.exists(self.json_path):
             self.load_from_serialized()
         else:
             self.title = os.path.basename(self.path)
+
 
         self.load_children()
 
@@ -165,7 +188,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
                 child.remove_data()
             try:
                 # The json file must be removed first. Otherwise the rmdir will fail.
-                if os.path.exists(self.get_json_path()):
+                if os.path.exists(self.json_path):
                     os.remove(self.get_json_path())
                 os.rmdir(self.path)
             except OSError as err:
@@ -174,8 +197,13 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
                 if err.errno != errno.ENOTEMPTY:
                     raise
 
-    def get_json_path(self):
-        return self.path + "/.folder.json"
+    @property
+    def json_path(self):
+        return JSON_FILE_PATTERN.format(self.path, "folder")
+
+    @property
+    def match_path(self):
+        return MATCH_FILE_PATTERN.format(self.path, "folder")
 
     def get_tuple(self):
         return "folder", self.title, self.get_abbreviations(), self.get_hotkey_string(), self
@@ -207,9 +235,9 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         #del self.phrases[phrase.description]
         self.items.remove(item)
 
-    def check_input(self, buffer, window_info):
+    def check_input(self, buffer, window_info, match_runner: ScriptRunner):
         if TriggerMode.ABBREVIATION in self.modes:
-            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info)
+            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info, match_runner)
         else:
             return False
 

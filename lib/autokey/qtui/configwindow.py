@@ -31,6 +31,7 @@ import autokey.configmanager.configmanager_constants as cm_constants
 
 from .settings import SettingsDialog
 from . import dialogs
+from ..model.script import Script
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 PROBLEM_MSG_PRIMARY = "Some problems were found"
@@ -296,7 +297,7 @@ class ConfigWindow(*autokey.qtui.common.inherits_from_ui_file_with_name("mainwin
         QTimer.singleShot(
             2000,  # Fix the GUI tooltip for action_run_script when changing this!
             (lambda: self.app.service.scriptRunner.execute_script(
-                script
+                script.script
             ))
         )
 

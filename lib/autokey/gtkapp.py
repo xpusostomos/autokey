@@ -17,6 +17,8 @@
 import autokey.dbus_service
 import autokey.model.script
 from . import common
+from .script_runner import ScriptErrorRecord
+
 common.USING_QT = False
 
 import sys
@@ -228,7 +230,7 @@ class Application:
         os.remove(common.LOCK_FILE)
         logger.debug("All shutdown tasks complete... quitting")
 
-    def notify_error(self, error: autokey.model.script.ScriptErrorRecord):
+    def notify_error(self, error: ScriptErrorRecord):
         """
         Show an error notification popup.
 

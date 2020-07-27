@@ -248,7 +248,8 @@ class AbbrSettingsDialog(DialogBase):
                 self.abbrList.get_model().append((abbr,))
             self.removeButton.set_sensitive(True)
             firstIter = self.abbrList.get_model().get_iter_first()
-            self.abbrList.get_selection().select_iter(firstIter)
+            if firstIter is not None: #TODO CJB not sure why I needed this
+                self.abbrList.get_selection().select_iter(firstIter)
         else:
             self.removeButton.set_sensitive(False)
 
@@ -285,27 +286,28 @@ class AbbrSettingsDialog(DialogBase):
         self.immediateCheckbox.set_active(item.immediate)
 
     def save(self, item):
-        item.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
         item.clear_abbreviations()
         item.abbreviations = self.get_abbrs()
+        if len(item.abbreviations) > 0:
+            item.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
 
-        item.backspace = self.removeTypedCheckbox.get_active()
+            item.backspace = self.removeTypedCheckbox.get_active()
 
-        option = self.wordCharCombo.get_active_text()
-        if option in WORD_CHAR_OPTIONS:
-            item.set_word_chars(WORD_CHAR_OPTIONS[option])
-        else:
-            item.set_word_chars(autokey.model.helpers.make_wordchar_re(option))
+            option = self.wordCharCombo.get_active_text()
+            if option in WORD_CHAR_OPTIONS:
+                item.set_word_chars(WORD_CHAR_OPTIONS[option])
+            else:
+                item.set_word_chars(autokey.model.helpers.make_wordchar_re(option))
 
-        if not isinstance(item, autokey.model.folder.Folder):
-            item.omitTrigger = self.omitTriggerCheckbox.get_active()
+            if not isinstance(item, autokey.model.folder.Folder):
+                item.omitTrigger = self.omitTriggerCheckbox.get_active()
 
-        if isinstance(item, autokey.model.phrase.Phrase):
-            item.matchCase = self.matchCaseCheckbox.get_active()
+            if isinstance(item, autokey.model.phrase.Phrase):
+                item.matchCase = self.matchCaseCheckbox.get_active()
 
-        item.ignoreCase = self.ignoreCaseCheckbox.get_active()
-        item.triggerInside = self.triggerInsideCheckbox.get_active()
-        item.immediate = self.immediateCheckbox.get_active()
+            item.ignoreCase = self.ignoreCaseCheckbox.get_active()
+            item.triggerInside = self.triggerInsideCheckbox.get_active()
+            item.immediate = self.immediateCheckbox.get_active()
 
     def reset(self):
         self.abbrList.get_model().clear()
@@ -412,6 +414,8 @@ class AbbrSettingsDialog(DialogBase):
 
 class HotkeySettingsDialog(DialogBase):
 
+    NONE_KEY = '(None)'
+
     KEY_MAP = {
                ' ': "<space>",
                }
@@ -452,7 +456,9 @@ class HotkeySettingsDialog(DialogBase):
             self.metaButton.set_active(Key.META in item.modifiers)
 
             key = item.hotKey
-            if key in self.KEY_MAP:
+            if key is None:
+                keyText = self.NONE_KEY
+            elif key in self.KEY_MAP:
                 keyText = self.KEY_MAP[key]
             else:
                 keyText = key
@@ -474,7 +480,7 @@ class HotkeySettingsDialog(DialogBase):
         else:
             key = keyText
 
-        assert key is not None, "Attempt to set hotkey with no key"
+        # assert key is not None, "Attempt to set hotkey with no key"
         item.set_hotkey(modifiers, key)
 
     def reset(self):
@@ -485,7 +491,7 @@ class HotkeySettingsDialog(DialogBase):
         self.hyperButton.set_active(False)
         self.metaButton.set_active(False)
 
-        self._setKeyLabel(_("(None)"))
+        self._setKeyLabel(_(self.NONE_KEY))
         self.key = None
         self.setButton.set_sensitive(True)
 
@@ -586,17 +592,17 @@ class GlobalHotkeyDialog(HotkeySettingsDialog):
     def valid(self):
         configManager = self.configManager
         modifiers = self.build_modifiers()
-        regex = self.targetItem.get_applicable_filter().windowInfoRegex
-        pattern = None
-        if regex is not None:
-            pattern = regex.pattern
-
-        unique, conflicting = configManager.check_hotkey_unique(modifiers, self.key, pattern, self.targetItem)
-        if not validate(unique,
-                        _("The hotkey is already in use for %s.") % conflicting,
-                        None,
-                        self.ui):
-            return False
+        # regex = self.targetItem.get_applicable_filter().windowInfoRegex
+        # pattern = None
+        # if regex is not None:
+        #     pattern = regex.pattern
+        #
+        # unique, conflicting = configManager.check_hotkey_unique(modifiers, self.key, pattern, self.targetItem)
+        # if not validate(unique,
+        #                 _("The hotkey is already in use for %s.") % conflicting,
+        #                 None,
+        #                 self.ui):
+        #     return False
 
         if not validate(
                 self.key is not None,
@@ -617,7 +623,7 @@ class WindowFilterSettingsDialog(DialogBase):
         self.ui.set_transient_for(parent)
         self.closure = closure
 
-        self.triggerRegexEntry = builder.get_object("triggerRegexEntry")
+        # self.triggerRegexEntry = builder.get_object("triggerRegexEntry")
         self.recursiveButton = builder.get_object("recursiveButton")
         self.detectButton = builder.get_object("detectButton")
 
@@ -629,8 +635,10 @@ class WindowFilterSettingsDialog(DialogBase):
         scrolledWindow.add(self.match_script_editor)
         scrolledWindow.show_all()
 
-        # self.textView = builder.get_object("textView")
-
+        # Editor font
+        settings = Gio.Settings.new("org.gnome.desktop.interface")
+        fontDesc = Pango.font_description_from_string(settings.get_string("monospace-font-name"))
+        self.match_script_editor.modify_font(fontDesc)
         self.__m = GtkSource.LanguageManager()
         self.__sm = GtkSource.StyleSchemeManager()
         self.match_script_buffer.set_language(self.__m.get_language("python"))
@@ -653,37 +661,39 @@ class WindowFilterSettingsDialog(DialogBase):
         if not item.has_filter():
             self.reset()
         else:
-            self.triggerRegexEntry.set_text(item.get_filter_display_text())
-            self.recursiveButton.set_active(item.isRecursive)
+            # self.triggerRegexEntry.set_text(item.get_filter_display_text())
+            self.set_match_script(item.match_script.code)
 
+        # self.textView.get_buffer().set_text(item.match_code)
+
+    def set_match_script(self, script):
         self.match_script_buffer.begin_not_undoable_action()
-        self.match_script_buffer.set_text(item.match_code)
+        self.match_script_buffer.set_text(script)
         # self.match_script_buffer.set_text(theScript.code.encode("utf-8"))
         self.match_script_buffer.end_not_undoable_action()
         self.match_script_buffer.place_cursor(self.match_script_buffer.get_start_iter())
 
-        # self.textView.get_buffer().set_text(item.match_code)
-
     # It seriously bugs me how much duplication there is between the two GUIs.
     def save(self, item):
-        regex = self.get_filter_text()
-        try:
-            item.set_window_titles(regex)
-        except re.error:
-            logger.error(
-                "Invalid window filter regex: '{}'. Discarding without saving.".format(regex)
-            )
+        # regex = self.get_filter_text()
+        # try:
+        #     item.set_window_titles(regex)
+        # except re.error:
+        #     logger.error(
+        #         "Invalid window filter regex: '{}'. Discarding without saving.".format(regex)
+        #     )
 
         buf = self.match_script_buffer
-        item.match_code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+        item.match_script.code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
         item.set_filter_recursive(self.get_is_recursive())    # TODO CJB
 
     def reset(self):
-        self.triggerRegexEntry.set_text("")
+        # self.triggerRegexEntry.set_text("")
+        self.set_match_script("")
         self.recursiveButton.set_active(False)
 
-    def get_filter_text(self):
-        return self.triggerRegexEntry.get_text()
+    # def get_filter_text(self):
+    #     return self.triggerRegexEntry.get_text()
 
     def get_is_recursive(self):
         return self.recursiveButton.get_active()
@@ -692,7 +702,8 @@ class WindowFilterSettingsDialog(DialogBase):
         return True
 
     def reset_focus(self):
-        self.triggerRegexEntry.grab_focus()
+        self.match_script_editor.grab_focus()
+        # self.triggerRegexEntry.grab_focus()
 
     def on_response(self, widget, responseId):
         self.closure(responseId)
@@ -702,12 +713,24 @@ class WindowFilterSettingsDialog(DialogBase):
         dlg = DetectDialog(self.ui)
         dlg.populate(info)
         response = dlg.run()
-
-        if response == Gtk.ResponseType.OK:
-            self.triggerRegexEntry.set_text(dlg.get_choice())
-
         self.detectButton.set_sensitive(True)
         Gdk.threads_leave()
+        # choice = dlg.get_choice()
+        if response == Gtk.ResponseType.OK:
+            regex = ''
+            script = ''
+            if dlg.is_win_class:
+                regex += re.escape(dlg.win_class)
+                script += 'if re.match("' + re.escape(dlg.win_class) + '", window.active_class):\n    window.match = True\n'
+            if dlg.is_win_title:
+                if dlg.is_win_class:
+                    regex += '|'
+                regex += re.escape(dlg.win_title)
+                script += 'if re.match("' + re.escape(dlg.win_title) + '", window.active_title):\n    window.match = True\n'
+            Gdk.threads_enter()
+            # self.triggerRegexEntry.set_text(regex)
+            self.match_script_buffer.set_text(script)
+            Gdk.threads_leave()
 
     def on_detectButton_pressed(self, widget, data=None):
         #self.__dlg =
@@ -728,7 +751,11 @@ class DetectDialog(DialogBase):
         self.titleLabel = builder.get_object("titleLabel")
         self.classRadioButton = builder.get_object("classRadioButton")
         self.titleRadioButton = builder.get_object("titleRadioButton")
-
+        self.bothRadioButton = builder.get_object("bothRadioButton")
+        self.win_class = ''
+        self.win_title = ''
+        self.is_win_class = False
+        self.is_win_title = False
         DialogBase.__init__(self)
 
     def populate(self, windowInfo):
@@ -736,17 +763,23 @@ class DetectDialog(DialogBase):
         self.classLabel.set_text(_("Window class: %s") % windowInfo.wm_class)
         self.windowInfo = windowInfo
 
-    def get_choice(self):
-        if self.classRadioButton.get_active():
-            return self.windowInfo.wm_class
-        else:
-            return self.windowInfo.wm_title
+    #TODO CJB obsolete
+    # def get_choice(self):
+    #     if self.classRadioButton.get_active():
+    #         return self.windowInfo.wm_class
+    #     else:
+    #         return self.windowInfo.wm_title
 
     def on_cancel(self, widget, data=None):
-        self.ui.response(Gtk.ResponseType.CANCEL)
+        self.response(Gtk.ResponseType.CANCEL)
         self.hide()
 
     def on_ok(self, widget, data=None):
+        # We need to store the results in non Gtk variables, otherwise things get messy with threading.
+        self.is_win_class = self.classRadioButton.get_active() or self.bothRadioButton.get_active()
+        self.is_win_title = self.titleRadioButton.get_active() or self.bothRadioButton.get_active()
+        self.win_class = self.windowInfo.wm_class
+        self.win_title = self.windowInfo.wm_title
         self.response(Gtk.ResponseType.OK)
         self.hide()
 

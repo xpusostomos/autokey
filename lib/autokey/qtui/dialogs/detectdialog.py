@@ -43,6 +43,7 @@ class DetectDialog(*ui_common.inherits_from_ui_file_with_name("detectdialog")):
             "Detected window with properties title: {}, window class: {}".format(self.window_title, self.window_class)
         )
 
+        #TODO CJB
     def get_choice(self) -> str:
         # This relies on autoExclusive being set to true in the ui file.
         if self.classButton.isChecked():

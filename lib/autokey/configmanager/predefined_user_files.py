@@ -152,8 +152,8 @@ def _create_script(data: ItemData, parent: Folder) -> Script:
     for abbreviation in data.abbreviations:
         item.add_abbreviation(abbreviation)
     item.set_modes(data.trigger_modes)
-    if data.window_filter:
-        item.set_window_titles(data.window_filter)
+    # if data.window_filter:  #TOD CJB does this need to be revamped?
+    #     item.set_window_titles(data.window_filter)
     item.show_in_tray_menu = data.show_in_tray_menu
     parent.add_item(item)
     item.persist()
@@ -169,8 +169,8 @@ def _create_phrase(data: ItemData, parent: Folder) -> Phrase:
     for abbreviation in data.abbreviations:
         item.add_abbreviation(abbreviation)
     item.set_modes(data.trigger_modes)
-    if data.window_filter:
-        item.set_window_titles(data.window_filter)
+    # if data.window_filter:   #TODO CJB does this need to be revamped
+    #     item.set_window_titles(data.window_filter)
     item.show_in_tray_menu = data.show_in_tray_menu
     parent.add_item(item)
     item.persist()

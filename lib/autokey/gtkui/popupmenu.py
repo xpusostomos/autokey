@@ -124,4 +124,5 @@ class PopupMenu(Gtk.Menu):
             self.append(menuItem)
             
     def __itemSelected(self, widget, item):
+        print("CJB item selected")
         self.service.item_selected(item)

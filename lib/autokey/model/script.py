@@ -27,6 +27,10 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
+from lib.autokey.script_runner import SimpleScript, ScriptRunner
+
+# from lib.autokey.service import ScriptRunner
+
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
@@ -39,17 +43,19 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
+        self.path = path  # TODO CJB
         self.description = description
-        self.code = source_code
-        self.match_code = match_code
-        self.store = Store()
+        self.script = SimpleScript(path, source_code)
+        self.match_script = SimpleScript(self.match_path, match_code)
+        # self.code = source_code
+        # self.match_code = match_code
+        # self.store = Store()
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
         self.prompt = False
         self.omitTrigger = False
         self.parent = None
         self.show_in_tray_menu = False
-        self.path = path
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -58,11 +64,13 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             base_name = base_name[:-3]
         self.path = get_safe_path(self.parent.path, base_name, ".py")
 
-    def get_json_path(self):
+    @property
+    def json_path(self):
         directory, base_name = os.path.split(self.path[:-3])
         return JSON_FILE_PATTERN.format(directory, base_name)
 
-    def get_match_path(self):
+    @property
+    def match_path(self):
         directory, base_name = os.path.split(self.path[:-3])
         return MATCH_FILE_PATTERN.format(directory, base_name)
 
@@ -73,16 +81,16 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self._persist_metadata()
 
         with open(self.path, "w") as out_file:
-            out_file.write(self.code)
+            out_file.write(self.script.code)
 
-        if self.match_code == '':
+        if self.match_script.code == '':
             try:
-                os.remove(self.get_match_path())
+                os.remove(self.match_path)
             except FileNotFoundError:
                 pass
         else:
-            with open(self.get_match_path(), "w") as out_file:
-                out_file.write(self.match_code)
+            with open(self.match_path, "w") as out_file:
+                out_file.write(self.match_script.code)
 
     def get_serializable(self):
         d = {
@@ -117,7 +125,7 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             self._try_persist_metadata(cleaned_data)
 
     def _try_persist_metadata(self, serializable_data: dict):
-        with open(self.get_json_path(), "w") as json_file:
+        with open(self.json_path, "w") as json_file:
                 json.dump(serializable_data, json_file, indent=4)
 
     @staticmethod
@@ -153,26 +161,28 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
 
         try:
             with open(self.path, "r", encoding="UTF-8") as in_file:
-                self.code = in_file.read()
+                self.script.code = in_file.read()
         except IOError:
             logger.exception("Error while loading script for " + self.description)
             logger.error("SCRIPT not loaded (or loaded incomplete)")
 
         try:
-            with open(self.get_match_path(), "r", encoding="UTF-8") as in_file:
-                self.match_code = in_file.read()
+            with open(self.match_path, "r", encoding="UTF-8") as in_file:
+                self.match_script.code = in_file.read()
+        except FileNotFoundError:
+            pass
         except IOError:
             logger.exception("Error while loading script for " + self.description)
             logger.error("SCRIPT not loaded (or loaded incomplete)")
 
-        if os.path.exists(self.get_json_path()):
+        if os.path.exists(self.json_path):
             self.load_from_serialized()
         else:
             self.description = os.path.basename(self.path)[:-3]
 
     def load_from_serialized(self, **kwargs):
         try:
-            with open(self.get_json_path(), "r") as jsonFile:
+            with open(self.json_path, "r") as jsonFile:
                 data = json.load(jsonFile)
                 self.inject_json_data(data)
         except Exception:
@@ -194,10 +204,10 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def rebuild_path(self):
         if self.path is not None:
             oldName = self.path
-            oldJson = self.get_json_path()
+            oldJson = self.json_path
             self.build_path()
             os.rename(oldName, self.path)
-            os.rename(oldJson, self.get_json_path())
+            os.rename(oldJson, self.json_path)
         else:
             self.build_path()
 
@@ -205,13 +215,13 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         if self.path is not None:
             if os.path.exists(self.path):
                 os.remove(self.path)
-            if os.path.exists(self.get_json_path()):
-                os.remove(self.get_json_path())
+            if os.path.exists(self.json_path):
+                os.remove(self.json_path)
 
     def copy(self, source_script):
         self.description = source_script.description
-        self.code = source_script.code
-        self.match_code = source_script.match_code
+        self.script = Script(source_script.script.path, source_script.script.code)
+        self.match_script = Script(source_script.match_script.path, source_script.match_script.code)
 
         self.prompt = source_script.prompt
         self.omitTrigger = source_script.omitTrigger
@@ -227,9 +237,9 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def set_modes(self, modes: typing.List[TriggerMode]):
         self.modes = modes
 
-    def check_input(self, buffer, window_info):
+    def check_input(self, buffer, window_info, script_runner: ScriptRunner):
         if TriggerMode.ABBREVIATION in self.modes:
-            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info)
+            return self._should_trigger_abbreviation(buffer) and self._should_trigger_window_title(window_info, script_runner)
         else:
             return False
 
@@ -272,14 +282,3 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def __repr__(self):
         return "Script('" + self.description + "')"
 
-
-class ScriptErrorRecord:
-    """
-    This class holds a record of an error that caused a user Script to abort and additional meta-data .
-    """
-    def __init__(self, script: typing.Union[Script, Path], error_traceback: str,
-                 start_time: datetime.time, error_time: datetime.time):
-        self.script_name = script.description if isinstance(script, Script) else str(script)
-        self.error_traceback = error_traceback
-        self.start_time = start_time
-        self.error_time = error_time

@@ -58,7 +58,7 @@ class ScriptPage(*ui_common.inherits_from_ui_file_with_name("scriptpage")):
     def load(self, script: autokey.model.script.Script):
         self.current_script = script
         self.scriptCodeEditor.clear()
-        self.scriptCodeEditor.append(script.code)
+        self.scriptCodeEditor.append(script.script.code)
         self.showInTrayCheckbox.setChecked(script.show_in_tray_menu)
         self.promptCheckbox.setChecked(script.prompt)
         self.settingsWidget.load(script)
@@ -73,7 +73,7 @@ class ScriptPage(*ui_common.inherits_from_ui_file_with_name("scriptpage")):
 
     def save(self):
         self.settingsWidget.save()
-        self.current_script.code = str(self.scriptCodeEditor.text())
+        self.current_script.script.code = str(self.scriptCodeEditor.text())
         self.current_script.show_in_tray_menu = self.showInTrayCheckbox.isChecked()
         self.current_script.prompt = self.promptCheckbox.isChecked()
         self.current_script.persist()

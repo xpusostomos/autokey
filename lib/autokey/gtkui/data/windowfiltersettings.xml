@@ -3,6 +3,7 @@
 <interface>
   <requires lib="gtk+" version="3.0"/>
   <object class="GtkDialog" id="windowfiltersettings">
+    <property name="width_request">400</property>
     <property name="can_focus">False</property>
     <property name="border_width">8</property>
     <property name="title" translatable="yes">Set Window Filter</property>
@@ -69,49 +70,6 @@
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkBox" id="box1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="valign">start</property>
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkLabel" id="label1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Regular expression to match:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="triggerRegexEntry">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="tooltip_text" translatable="yes">Regular expression to match the title or class of windows</property>
-                    <property name="invisible_char">•</property>
-                    <property name="activates_default">True</property>
-                    <property name="width_chars">30</property>
-                    <property name="truncate_multiline">True</property>
-                    <property name="primary_icon_activatable">False</property>
-                    <property name="secondary_icon_activatable">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkAlignment" id="alignment1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -132,7 +90,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">7</property>
+                <property name="position">9</property>
               </packing>
             </child>
             <child>
@@ -144,23 +102,26 @@
                 <property name="receives_default">False</property>
                 <property name="halign">start</property>
                 <property name="valign">start</property>
+                <property name="margin_bottom">12</property>
                 <property name="draw_indicator">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">8</property>
+                <property name="position">10</property>
               </packing>
             </child>
             <child>
-              <object class="GtkSeparator">
+              <object class="GtkLabel">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Enter match code:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">10</property>
+                <property name="fill">True</property>
+                <property name="position">11</property>
               </packing>
             </child>
             <child>
@@ -178,7 +139,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">20</property>
+                <property name="position">22</property>
               </packing>
             </child>
           </object>

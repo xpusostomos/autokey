@@ -285,7 +285,7 @@ class CentralWidget(*ui_common.inherits_from_ui_file_with_name("centralwidget"))
         parent_item = tree_widget.selectedItems()[0]  # type: ak_tree.ItemWidgetType
         parent = self.__extractData(parent_item)
 
-        script = autokey.model.script.Script("New Script", "#Enter script code", "#Enter match code")
+        script = autokey.model.script.Script("New Script", "", "")
         new_item = ak_tree.ScriptWidgetItem(parent_item, script)
         parent.add_item(script)
         script.persist()

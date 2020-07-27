@@ -43,6 +43,8 @@ import autokey.configmanager.predefined_user_files
 from autokey.iomediator.constants import X_RECORD_INTERFACE
 from autokey.model.key import MODIFIERS
 
+from lib.autokey.script_runner import ScriptRunner, SimpleScript
+
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
@@ -358,7 +360,7 @@ class ConfigManager:
 
                 if baseName.endswith(".json"):
                     for item in self.allItems:
-                        if item.get_json_path() == path:
+                        if item.json_path == path:
                             item.load_from_serialized()
                             loaded = True
 
@@ -666,22 +668,22 @@ class ConfigManager:
         except ValueError:
             return False"""
 
-    def check_hotkey_unique(self, modifiers, hotKey, newFilterPattern, targetItem):
-        """
-        Checks that the given hotkey is not already in use. Also checks the
-        special hotkeys configured from the advanced settings dialog.
-
-        @param modifiers: modifiers for the hotkey
-        @param hotKey: the hotkey to check
-        @param newFilterPattern:
-        @param targetItem: the phrase for which the hotKey to be used
-        """
-        return True, None # TODO CJB TMP
-        item = self.get_item_with_hotkey(modifiers, hotKey, newFilterPattern)
-        if item:
-            return item is targetItem, item
-        else:
-            return True, None
+    # def check_hotkey_unique(self, modifiers, hotKey, newFilterPattern, targetItem):
+    #     """
+    #     Checks that the given hotkey is not already in use. Also checks the
+    #     special hotkeys configured from the advanced settings dialog.
+    #
+    #     @param modifiers: modifiers for the hotkey
+    #     @param hotKey: the hotkey to check
+    #     @param newFilterPattern:
+    #     @param targetItem: the phrase for which the hotKey to be used
+    #     """
+    #     return True, None # TODO CJB TMP
+    #     item = self.get_item_with_hotkey(modifiers, hotKey, newFilterPattern)
+    #     if item:
+    #         return item is targetItem, item
+    #     else:
+    #         return True, None
 
     def get_item_with_hotkey(self, modifiers, hotKey, newFilterPattern=None):
         """
@@ -772,8 +774,8 @@ class GlobalHotkey(autokey.model.abstract_hotkey.AbstractHotkey):
     def __init__(self):
         autokey.model.abstract_hotkey.AbstractHotkey.__init__(self)
         self.enabled = False
-        self.windowInfoRegex = None
-        self.match_code = None
+        # self.windowInfoRegex = None
+        self.match_script = SimpleScript('', '')   # TODO CJB how to hand for globals
         self.isRecursive = False
         self.parent = None
         self.modes = []
@@ -795,9 +797,9 @@ class GlobalHotkey(autokey.model.abstract_hotkey.AbstractHotkey):
         """
         self.closure = closure
 
-    def check_hotkey(self, modifiers, key, windowTitle):
+    def check_hotkey(self, modifiers, key, windowTitle, match_runner: ScriptRunner):
         # TODO: Doesn’t this always return False? (as long as no exceptions are thrown)
-        if autokey.model.abstract_hotkey.AbstractHotkey.check_hotkey(self, modifiers, key, windowTitle) and self.enabled:
+        if autokey.model.abstract_hotkey.AbstractHotkey.check_hotkey(self, modifiers, key, windowTitle, match_runner) and self.enabled:
             logger.debug("Triggered global hotkey using modifiers: %r key: %r", modifiers, key)
             self.closure()
         return False

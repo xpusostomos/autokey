@@ -52,7 +52,7 @@ class WindowFilterSettingsDialog(*ui_common.inherits_from_ui_file_with_name("win
             self.apply_recursive_check_box.setChecked(item.isRecursive)
 
     def save(self, item):
-        regex = self.get_filter_text()
+        # regex = self.get_filter_text()
         try:
             item.set_window_titles(regex)
         except re.error:
@@ -72,8 +72,8 @@ class WindowFilterSettingsDialog(*ui_common.inherits_from_ui_file_with_name("win
     def reset_focus(self):
         self.trigger_regex_line_edit.setFocus()
 
-    def get_filter_text(self):
-        return str(self.trigger_regex_line_edit.text())
+    # def get_filter_text(self):
+    #     return str(self.trigger_regex_line_edit.text())
 
     def receive_window_info(self, info):
         self.parentWidget().window().app.exec_in_main(self._receiveWindowInfo, info)
@@ -85,6 +85,7 @@ class WindowFilterSettingsDialog(*ui_common.inherits_from_ui_file_with_name("win
 
         if dlg.result() == QDialog.Accepted:
             self.trigger_regex_line_edit.setText(dlg.get_choice())
+            #TODO CJB
 
         self.detect_window_properties_button.setEnabled(True)
 

@@ -16,50 +16,56 @@
 
 import re
 
-INHERITED_FROM_PARENT = '{ inherited from parent } '
-NONE_CONFIGURED = '{ none configured }'
+from lib.autokey.script_runner import ScriptRunner
+
 
 class AbstractWindowFilter:
 
+    INHERITED_FROM_PARENT = '{ inherited from parent } '
+    NONE_CONFIGURED = '{ none configured }'
+
     def __init__(self):
-        self.windowInfoRegex = None
+        # self.windowInfoRegex = None
         self.isRecursive = False
 
     def get_serializable(self):
-        if self.windowInfoRegex is not None:
-            return {"regex": self.windowInfoRegex.pattern, "isRecursive": self.isRecursive}
-        else:
-            return {"regex": None, "isRecursive": False}
+        # if self.windowInfoRegex is not None:
+        #     return {"regex": self.windowInfoRegex.pattern, "isRecursive": self.isRecursive}
+        # else:
+        # return {"regex": None, "isRecursive": False}
+        return {"isRecursive": False}
 
     def load_from_serialized(self, data):
         try:
             if isinstance(data, dict): # check needed for data from versions < 0.80.4
-                self.set_window_titles(data["regex"])
+                # self.set_window_titles(data["regex"])
                 self.isRecursive = data["isRecursive"]
-            else:
-                self.set_window_titles(data)
+            # else:
+            #     self.set_window_titles(data)
         except re.error as e:
             raise e
 
     def copy_window_filter(self, window_filter):
-        self.windowInfoRegex = window_filter.windowInfoRegex
+        # self.windowInfoRegex = window_filter.windowInfoRegex
         self.isRecursive = window_filter.isRecursive
 
-    def set_window_titles(self, regex):
-        if regex is not None:
-            try:
-                self.windowInfoRegex = re.compile(regex, re.UNICODE)
-            except re.error as e:
-                raise e
-        else:
-            self.windowInfoRegex = None
+# TODO CJB what did this used to do?
+    # def set_window_titles(self, regex):
+    #     if regex is not None:
+    #         try:
+    #             self.windowInfoRegex = re.compile(regex, re.UNICODE)
+    #         except re.error as e:
+    #             raise e
+    #     else:
+    #         self.windowInfoRegex = None
 
     def set_filter_recursive(self, recurse):
         self.isRecursive = recurse
 
     # TODO CJB probably obsolete
     def has_filter(self) -> bool:
-        return self.windowInfoRegex is not None
+        return self.match_script.code != ''
+        # return self.windowInfoRegex is not None and self.match_code != ''
 
     # TODO CJB probably obsolete
     def inherits_filter(self) -> bool:
@@ -69,79 +75,101 @@ class AbstractWindowFilter:
         return False
 
     # TODO CJB obsolete
-    def get_child_filter(self):
-        if self.isRecursive and self.windowInfoRegex is not None:
-            return self.get_filter_regex()
-        elif self.parent is not None:
-            return self.parent.get_child_filter()
-        else:
-            return ""
+    # def get_child_filter(self):
+    #     if self.isRecursive and self.windowInfoRegex is not None:
+    #         return self.get_filter_regex()
+    #     elif self.parent is not None:
+    #         return self.parent.get_child_filter()
+    #     else:
+    #         return ""
 
-    # TODO CJB obsolete
-    def get_filter_regex(self):
-        """
-        Used by the GUI to obtain human-readable version of the filter
-        """
-        if self.windowInfoRegex is not None:
-            if self.isRecursive:
-                return self.windowInfoRegex.pattern
-            else:
-                return self.windowInfoRegex.pattern
-        elif self.parent is not None:
-            return self.parent.get_child_filter()
-        else:
-            return ""
+    # # TODO CJB obsolete
+    # def get_filter_regex(self):
+    #     """
+    #     Used by the GUI to obtain human-readable version of the filter
+    #     """
+    #     if self.windowInfoRegex is not None:
+    #         if self.isRecursive:
+    #             return self.windowInfoRegex.pattern
+    #         else:
+    #             return self.windowInfoRegex.pattern
+    #     elif self.parent is not None:
+    #         return self.parent.get_child_filter()
+    #     else:
+    #         return ""
 
-    # TODO CJB probably obsolete
-    def filter_matches(self, otherFilter):
-        # XXX Should this be and?
-        if otherFilter is None or not self.has_applicable_filter():
-            return True
-        return otherFilter == self.get_applicable_filter().windowInfoRegex.pattern
+    # # TODO CJB probably obsolete
+    # def filter_matches(self, otherFilter):
+    #     # XXX Should this be and?
+    #     if otherFilter is None or not self.has_applicable_filter():
+    #         return True
+    #     return otherFilter == self.get_applicable_filter().windowInfoRegex.pattern
 
     def get_filter_display_text(self):
         item = self.get_applicable_filter()
         rtn = ''
         if (item != self):
-            rtn += INHERITED_FROM_PARENT
+            rtn += AbstractWindowFilter.INHERITED_FROM_PARENT
         if item is not None:
-            pattern = ''
-            if item.windowInfoRegex is not None:
-                pattern = item.windowInfoRegex.pattern
-            rtn += AbstractWindowFilter.get_filter_display_text_from(pattern, item.match_code)
+            # pattern = ''
+            # if item.windowInfoRegex is not None:
+            #     pattern = item.windowInfoRegex.pattern
+            rtn += AbstractWindowFilter.get_filter_display_text_from(item.match_script.code)
         else:
-            rtn = NONE_CONFIGURED
+            rtn = AbstractWindowFilter.NONE_CONFIGURED
+        if len(rtn) > 80:
+            rtn = rtn[:80] + '...'
         return rtn
 
     @staticmethod
-    def get_filter_display_text_from(pattern, match_code):
+    def get_filter_display_text_from(match_code):
         rtn = ''
-        rtn += pattern
-        rtn += match_code.replace('\n', ' ... ')
+        # rtn += pattern
+        rtn += match_code.replace('\n', ' ')
         if rtn == '':
-            rtn = NONE_CONFIGURED
+            rtn = AbstractWindowFilter.NONE_CONFIGURED
         return rtn
 
-    def same_filter_as_item(self, otherItem):
-        if not isinstance(otherItem, AbstractWindowFilter):
-            return False
-        return self.filter_matches(otherItem.get_applicable_filter())
+    # def same_filter_as_item(self, otherItem):
+    #     if not isinstance(otherItem, AbstractWindowFilter):
+    #         return False
+    #     return self.filter_matches(otherItem.get_applicable_filter())
 
     def get_applicable_filter(self, forChild=False):
-        if self.windowInfoRegex is not None or self.match_code != '':
+        # if self.windowInfoRegex is not None or self.match_code != '':
+        if self.match_script.code != '':
             if (forChild and self.isRecursive) or not forChild:
                 return self
         elif self.parent is not None:
             return self.parent.get_applicable_filter(True)
-
         return None
 
     def has_applicable_filter(self):
+        # print("has applicable filter: " + str(self.get_applicable_filter(False) is not None))
         return self.get_applicable_filter(False) is not None
 
-    def _should_trigger_window_title(self, window_info):
-        r = self.get_applicable_filter()  # type: typing.Pattern
-        if r is not None and r.windowInfoRegex is not None:
-            return bool(r.windowInfoRegex.match(window_info.wm_title)) or bool(r.windowInfoRegex.match(window_info.wm_class))
+    # def _should_trigger_window_title(self, window_info):
+    #     r = self.get_applicable_filter()  # type: typing.Pattern
+    #     if r is not None:
+    #         return bool(r.windowInfoRegex.match(window_info.wm_title)) or bool(r.windowInfoRegex.match(window_info.wm_class))
+    #     else:
+    #         return True
+
+    def _should_trigger_window_title(self, window_info, script_runner: ScriptRunner):
+        # print("should_trigger_window_title: " + str(window_info) + " " + self.path)
+        filter_item = self.get_applicable_filter()
+        if filter_item is None:
+            return True
+        # elif item.windowInfoRegex is not None:
+        #     return item._should_trigger_window_title(window_info)
         else:
-            return False
+            filter_item = self.get_applicable_filter()
+            scope = script_runner.scope.copy()
+            scope["window"].window_info = window_info
+            scope["window"].match = False
+            # print("run match: " + str(self) + ' path: ' + filter_item.match_path + " item: " + self.path)
+            # script_runner.execute_match(filter_item, scope)
+            script_runner.execute_script(filter_item.match_script)
+            # if scope["window"].match:
+            print("should_trigger_window_title: " + str(window_info) + " " + str(scope["window"].match))
+            return scope["window"].match

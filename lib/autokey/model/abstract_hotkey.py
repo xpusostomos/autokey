@@ -20,6 +20,8 @@ from autokey.model.helpers import TriggerMode
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.key import Key
 
+from lib.autokey.script_runner import ScriptRunner
+
 
 class AbstractHotkey(AbstractWindowFilter):
 
@@ -54,8 +56,8 @@ class AbstractHotkey(AbstractWindowFilter):
         if TriggerMode.HOTKEY in self.modes:
             self.modes.remove(TriggerMode.HOTKEY)
 
-    def check_hotkey(self, modifiers, key, windowTitle):  #TODO chris
-        if self.hotKey is not None:
+    def check_hotkey(self, modifiers, key, windowTitle, match_runner: ScriptRunner):  #TODO chris
+        if self.hotKey is not None and self._should_trigger_window_title(windowTitle, match_runner):
             return (self.modifiers == modifiers) and (self.hotKey == key)
         else:
             return False
@@ -74,7 +76,9 @@ class AbstractHotkey(AbstractWindowFilter):
             ret += modifier
             ret += "+"
 
-        if key == ' ':
+        if key is None:
+            pass
+        elif key == ' ':
             ret += "<space>"
         else:
             ret += key

@@ -367,15 +367,12 @@ class XInterfaceBase(threading.Thread):
 
         # Grab hotkeys without a filter in root window
         for item in hotkeys:
-            if item.has_applicable_filter():
+            if not item.has_applicable_filter():
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__enqueue(self.__grabRecurse, item, self.rootWindow, False)
 
         self.__enqueue(self.__recurseTree, self.rootWindow, hotkeys)
-
-    def matches(self, item, window_info):
-        return self.mediator.service.matches(item, window_info)
 
     def __recurseTree(self, parent, hotkeys):
         # Grab matching hotkeys in all open child windows
@@ -387,10 +384,10 @@ class XInterfaceBase(threading.Thread):
         for window in children:
             try:
                 window_info = self.get_window_info(window, False)
-                
                 if window_info.wm_title or window_info.wm_class:
+                    print("recurseTree: " + str(window_info))
                     for item in hotkeys:
-                        if item.has_applicable_filter():
+                        if item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.matchRunner):
                             self.__grabHotkey(item.hotKey, item.modifiers, window)
                             self.__grabRecurse(item, window, False)
                         
@@ -414,7 +411,7 @@ class XInterfaceBase(threading.Thread):
         
         # Ungrab hotkeys without a filter in root window, recursively
         for item in hotkeys:
-            if item.has_applicable_filter():
+            if not item.has_applicable_filter():
                 self.__ungrabHotkey(item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__ungrabRecurse(item, self.rootWindow, False)
@@ -434,7 +431,7 @@ class XInterfaceBase(threading.Thread):
                 
                 if window_info.wm_title or window_info.wm_class:
                     for item in hotkeys:
-                        if item.has_applicable_filter() and self.matches(item, window_info):
+                        if item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.scriptRunner):
                             self.__ungrabHotkey(item.hotKey, item.modifiers, window)
                             self.__ungrabRecurse(item, window, False)
                         
@@ -452,7 +449,7 @@ class XInterfaceBase(threading.Thread):
         hotkeys = c.hotKeys + c.hotKeyFolders
         window_info = self.get_window_info(window)
         for item in hotkeys:
-            if item.has_applicable_filter():
+            if item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.matchRunner):
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, window)
             elif self.__needsMutterWorkaround(item):
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, window)
@@ -461,6 +458,7 @@ class XInterfaceBase(threading.Thread):
         """
         Grab a specific hotkey in the given window
         """
+        print("Grabbing hotkey: %r %r %s", modifiers, key, str(self.get_window_info(window)))
         logger.debug("Grabbing hotkey: %r %r", modifiers, key)
         try:
             keycode = self.__lookupKeyCode(key)
@@ -497,6 +495,7 @@ class XInterfaceBase(threading.Thread):
             self.__enqueue(self.__grabRecurse, item, self.rootWindow)
 
     def __grabRecurse(self, item, parent, checkWinInfo=True):
+        # print("__grabRecurse")
         try:
             children = parent.query_tree().children
         except:
@@ -507,7 +506,8 @@ class XInterfaceBase(threading.Thread):
             
             if checkWinInfo:
                 window_info = self.get_window_info(window, False)
-                shouldTrigger = self.matches(item, window_info)
+                shouldTrigger = item._should_trigger_window_title(window_info, self.mediator.service.scriptRunner)
+                print("grabRecurse: " + str(window_info) + " st: " + str(shouldTrigger))
 
             if shouldTrigger or not checkWinInfo:
                 self.__grabHotkey(item.hotKey, item.modifiers, window)
@@ -543,7 +543,7 @@ class XInterfaceBase(threading.Thread):
             
             if checkWinInfo:
                 window_info = self.get_window_info(window, False)
-                shouldTrigger = self.matches(item, window_info)
+                shouldTrigger = item._should_trigger_window_title(window_info, self.mediator.service.scriptRunner)
 
             if shouldTrigger or not checkWinInfo:
                 self.__ungrabHotkey(item.hotKey, item.modifiers, window)
