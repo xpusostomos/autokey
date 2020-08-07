@@ -19,6 +19,7 @@ import re
 from lib.autokey.script_runner import ScriptRunner
 
 
+
 class AbstractWindowFilter:
 
     INHERITED_FROM_PARENT = '{ inherited from parent } '

@@ -45,6 +45,7 @@ class PhrasePage(*ui_common.inherits_from_ui_file_with_name("phrasepage")):
         self.current_phrase = phrase
         self.phraseText.setPlainText(phrase.phrase)
         self.showInTrayCheckbox.setChecked(phrase.show_in_tray_menu)
+        self.disabledCheckbox.setChecked(not phrase.enabled)
 
         for k, v in autokey.model.phrase.SEND_MODES.items():
             if v == phrase.sendMode:
@@ -67,6 +68,7 @@ class PhrasePage(*ui_common.inherits_from_ui_file_with_name("phrasepage")):
         self.settingsWidget.save()
         self.current_phrase.phrase = str(self.phraseText.toPlainText())
         self.current_phrase.show_in_tray_menu = self.showInTrayCheckbox.isChecked()
+        self.current_phrase.enabled = not self.disabledCheckbox.isChecked()
 
         self.current_phrase.sendMode = autokey.model.phrase.SEND_MODES[str(self.sendModeCombo.currentText())]
 
@@ -142,6 +144,9 @@ class PhrasePage(*ui_common.inherits_from_ui_file_with_name("phrasepage")):
         self.set_dirty()
 
     def on_showInTrayCheckbox_stateChanged(self, state):
+        self.set_dirty()
+
+    def on_disabledCheckbox_stateChanged(self, state):
         self.set_dirty()
 
     def on_sendModeCombo_currentIndexChanged(self, index):

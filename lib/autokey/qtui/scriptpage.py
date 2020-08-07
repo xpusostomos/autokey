@@ -60,6 +60,7 @@ class ScriptPage(*ui_common.inherits_from_ui_file_with_name("scriptpage")):
         self.scriptCodeEditor.clear()
         self.scriptCodeEditor.append(script.script.code)
         self.showInTrayCheckbox.setChecked(script.show_in_tray_menu)
+        self.disabledCheckBox.setChecked(not script.enabled)
         self.promptCheckbox.setChecked(script.prompt)
         self.settingsWidget.load(script)
         self.window().set_undo_available(False)
@@ -75,6 +76,7 @@ class ScriptPage(*ui_common.inherits_from_ui_file_with_name("scriptpage")):
         self.settingsWidget.save()
         self.current_script.script.code = str(self.scriptCodeEditor.text())
         self.current_script.show_in_tray_menu = self.showInTrayCheckbox.isChecked()
+        self.current_script.enabled = not self.disabledCheckbox.isChecked()
         self.current_script.prompt = self.promptCheckbox.isChecked()
         self.current_script.persist()
         ui_common.set_url_label(self.urlLabel, self.current_script.path)
@@ -157,6 +159,9 @@ class ScriptPage(*ui_common.inherits_from_ui_file_with_name("scriptpage")):
         self.set_dirty()
 
     def on_showInTrayCheckbox_stateChanged(self, state):
+        self.set_dirty()
+
+    def on_disabledCheckbox_stateChanged(self, state):
         self.set_dirty()
 
     def on_urlLabel_leftClickedUrl(self, url=None):

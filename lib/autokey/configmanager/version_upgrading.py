@@ -42,6 +42,10 @@ import autokey.model.phrase
 import autokey.model.script
 from autokey import common
 import autokey.configmanager.configmanager_constants as cm_constants
+import glob
+
+from lib.autokey.model.abstract_window_filter import AbstractWindowFilter
+from lib.autokey.model.folder import Folder
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -54,7 +58,7 @@ def upgrade_configuration(configuration_manager, config_data: dict):
         configuration_manager.config_altered(True)
     if version < "0.95.3":
         convert_autostart_entries_for_v0_95_3()
-    if version < "0.95.11":
+    if version < "0.95.12":
         convert_script_filter_for_v0_95_11(config_data, version)
     # Put additional conversion steps here.
 
@@ -128,27 +132,37 @@ def convert_autostart_entries_for_v0_95_3():
         )
         old_autostart_file.rename(new_file_name)
 
-def _convert_script_filter_for_v0_95_11_folder(folder_data, parent):
-    f = autokey.model.folder.Folder("")
-    f.inject_json_data(folder_data)
+def convert_script_filter_for_v0_95_11(config_data, old_version: str):
+    folders = [*config_data["folders"], *glob.glob(cm_constants.CONFIG_DEFAULT_FOLDER + "/*")]
+    for folder_data in folders:
+        if os.path.isdir(folder_data):
+            f = autokey.model.folder.Folder("", path=folder_data)
+            f.load(None)
+            _convert_script_filter_for_v0_95_11_folder(f)
+
+def _convert_script_filter_for_v0_95_11_folder(f: Folder):
+    # f = autokey.model.folder.Folder("", path=folder_data)
+    # f.load(parent)
+    f.match_script.code = _convert_regex_to_code_for_v0_95_11(f)
     f.persist()
 
-    for subfolder in folder_data["folders"]:
-        _convert_v0_70_to_v0_80_folder(subfolder, f)
+    for subfolder in f.folders:
+        _convert_script_filter_for_v0_95_11_folder(subfolder)
 
-    for itemData in folder_data["items"]:
-        i = None
-        if itemData["type"] == "script":
-            i = autokey.model.script.Script("", "", "")
-            i.code = itemData["code"]
-        elif itemData["type"] == "phrase":
-            i = autokey.model.phrase.Phrase("", "")
-            i.phrase = itemData["phrase"]
+    for i in f.items:
+        i.load(f)
+        i.match_script.code = _convert_regex_to_code_for_v0_95_11(i)
+        i.persist()
 
-        if i is not None:
-            i.inject_json_data(itemData)
-            i.persist()
+def _convert_regex_to_code_for_v0_95_11(item: AbstractWindowFilter):
+    script = ''
+    if "filter" in item.data:
+        filter = item.data["filter"]
+        if "regex" in filter:
+            regex = filter["regex"]
+            if regex is not None:
+                script += 'if re.match("' + regex + '", window.active_class):\n    window.match = True\n'
+                script += 'if re.match("' + regex + '", window.active_title):\n    window.match = True\n'
+    return script
 
-def convert_script_filter_for_v0_95_11(config_data, old_version: str):
-    for folder_data in config_data["folders"]:
-        _convert_script_filter_for_v0_95_11_folder(folder_data, None)
+

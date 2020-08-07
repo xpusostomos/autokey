@@ -23,6 +23,7 @@ import sys
 
 from autokey.model.store import Store
 from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
+from autokey.model.abstract_common import AbstractCommon
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
@@ -34,28 +35,24 @@ from lib.autokey.script_runner import SimpleScript, ScriptRunner
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
-class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
+class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     """
     Encapsulates all data and behaviour for a script.
     """
 
     def __init__(self, description: str, source_code: str, match_code: str, path=None):
+        AbstractCommon.__init__(self, path)
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
-        self.path = path  # TODO CJB
         self.description = description
         self.script = SimpleScript(path, source_code)
         self.match_script = SimpleScript(self.match_path, match_code)
         # self.code = source_code
         # self.match_code = match_code
         # self.store = Store()
-        self.modes = []  # type: typing.List[TriggerMode]
-        self.usageCount = 0
         self.prompt = False
         self.omitTrigger = False
-        self.parent = None
-        self.show_in_tray_menu = False
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -102,6 +99,7 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "prompt": self.prompt,
             "omitTrigger": self.omitTrigger,
             "showInTrayMenu": self.show_in_tray_menu,
+            "enabed": self.enabled,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self)
@@ -192,11 +190,9 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def inject_json_data(self, data: dict):
         self.description = data["description"]
         self.store = Store(data["store"])
-        self.modes = [TriggerMode(item) for item in data["modes"]]
-        self.usageCount = data["usageCount"]
         self.prompt = data["prompt"]
         self.omitTrigger = data["omitTrigger"]
-        self.show_in_tray_menu = data["showInTrayMenu"]
+        AbstractCommon.load_from_serialized(self, data)
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
         AbstractWindowFilter.load_from_serialized(self, data["filter"])
@@ -227,6 +223,7 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.omitTrigger = source_script.omitTrigger
         self.parent = source_script.parent
         self.show_in_tray_menu = source_script.show_in_tray_menu
+        self.enabled = source_script.enabled
         self.copy_abbreviation(source_script)
         self.copy_hotkey(source_script)
         self.copy_window_filter(source_script)

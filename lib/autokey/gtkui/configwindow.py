@@ -360,6 +360,7 @@ class FolderPage:
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        self.disabledCheckbox = builder.get_object("disabledCheckbox")
 
         vbox = builder.get_object("settingsVbox")
         self.settingsWidget = SettingsWidget(parentWindow)
@@ -368,6 +369,7 @@ class FolderPage:
     def load(self, theFolder):
         self.currentFolder = theFolder
         self.showInTrayCheckbox.set_active(theFolder.show_in_tray_menu)
+        self.disabledCheckbox.set_active(not theFolder.enabled)
         self.settingsWidget.load(theFolder)
 
         if self.is_new_item():
@@ -378,6 +380,7 @@ class FolderPage:
 
     def save(self):
         self.currentFolder.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentFolder.enabled = not self.disabledCheckbox.get_active()
         self.settingsWidget.save()
         self.currentFolder.persist()
         set_linkbutton(self.linkButton, self.currentFolder.path)
@@ -443,6 +446,7 @@ class ScriptPage:
 
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
+        self.disabledCheckbox = builder.get_object("disabledCheckbox")
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -474,6 +478,7 @@ class ScriptPage:
 
         self.promptCheckbox.set_active(theScript.prompt)
         self.showInTrayCheckbox.set_active(theScript.show_in_tray_menu)
+        self.disabledCheckbox.set_active(not theScript.enabled)
         self.settingsWidget.load(theScript)
 
         if self.is_new_item():
@@ -487,6 +492,7 @@ class ScriptPage:
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentItem.enabled = not self.disabledCheckbox.get_active()
 
         self.settingsWidget.save()
         self.currentItem.persist()
@@ -610,6 +616,7 @@ class PhrasePage(ScriptPage):
         scrolledWindow.add(self.editor)
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
+        self.disabledCheckbox = builder.get_object("disabledCheckbox")
         self.sendModeCombo = Gtk.ComboBoxText.new()
         self.sendModeCombo.connect("changed", self.on_modified)
         sendModeHbox = builder.get_object("sendModeHbox")
@@ -655,6 +662,7 @@ class PhrasePage(ScriptPage):
 
         self.promptCheckbox.set_active(thePhrase.prompt)
         self.showInTrayCheckbox.set_active(thePhrase.show_in_tray_menu)
+        self.disabledCheckbox.set_active(not thePhrase.enabled)
         self.settingsWidget.load(thePhrase)
 
         if self.is_new_item():
@@ -677,6 +685,7 @@ class PhrasePage(ScriptPage):
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentItem.enabled = not self.disabledCheckbox.get_active()
         self.currentItem.sendMode = autokey.model.phrase.SEND_MODES[self.sendModeCombo.get_active_text()]
 
         self.settingsWidget.save()

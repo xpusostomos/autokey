@@ -37,6 +37,7 @@ class FolderPage(*ui_common.inherits_from_ui_file_with_name("folderpage")):
     def load(self, folder: Folder):
         self.current_folder = folder
         self.showInTrayCheckbox.setChecked(folder.show_in_tray_menu)
+        self.disabledCheckbox.setChecked(not folder.enabled)
         self.settingsWidget.load(folder)
 
         if self.is_new_item():
@@ -47,6 +48,7 @@ class FolderPage(*ui_common.inherits_from_ui_file_with_name("folderpage")):
 
     def save(self):
         self.current_folder.show_in_tray_menu = self.showInTrayCheckbox.isChecked()
+        self.current_folder.enabled = not self.disabledCheckbox.isChecked()
         self.settingsWidget.save()
         self.current_folder.persist()
         ui_common.set_url_label(self.urlLabel, self.current_folder.path)
@@ -84,6 +86,9 @@ class FolderPage(*ui_common.inherits_from_ui_file_with_name("folderpage")):
 
     # --- Signal handlers
     def on_showInTrayCheckbox_stateChanged(self, state: bool):
+        self.set_dirty()
+
+    def disabledCheckbox_stateChanged(self, state: bool):
         self.set_dirty()
 
     @staticmethod

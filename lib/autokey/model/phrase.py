@@ -21,6 +21,7 @@ import typing
 
 from autokey.model.key import NAVIGATION_KEYS, Key, KEY_SPLIT_RE
 from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
+from autokey.model.abstract_common import AbstractCommon
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
@@ -30,28 +31,24 @@ from lib.autokey.script_runner import ScriptRunner, SimpleScript
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
-class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
+class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     """
     Encapsulates all data and behaviour for a phrase.
     """
 
     def __init__(self, description, phrase, match_code, path=None):
+        AbstractCommon.__init__(self, path)
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.phrase = phrase
         self.match_script = SimpleScript('', '')
-        self.modes = []  # type: typing.List[TriggerMode]
-        self.usageCount = 0
         self.prompt = False
         self.temporary = False
         self.omitTrigger = False
         self.matchCase = False
-        self.parent = None
-        self.show_in_tray_menu = False
         self.sendMode = SendMode.KEYBOARD
-        self.path = path
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -80,7 +77,6 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         with open(self.path, "w") as out_file:
             out_file.write(self.phrase)
 
-        if self.match_script.code == '':
             try:
                 os.remove(self.match_path)
             except FileNotFoundError:
@@ -99,6 +95,7 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "omitTrigger": self.omitTrigger,
             "matchCase": self.matchCase,
             "showInTrayMenu": self.show_in_tray_menu,
+            "enabled": self.enabled,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self),
@@ -137,13 +134,11 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
 
     def inject_json_data(self, data: dict):
         self.description = data["description"]
-        self.modes = [TriggerMode(item) for item in data["modes"]]
-        self.usageCount = data["usageCount"]
         self.prompt = data["prompt"]
         self.omitTrigger = data["omitTrigger"]
         self.matchCase = data["matchCase"]
-        self.show_in_tray_menu = data["showInTrayMenu"]
         self.sendMode = SendMode(data.get("sendMode", SendMode.KEYBOARD))
+        AbstractCommon.load_from_serialized(self, data)
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
         AbstractWindowFilter.load_from_serialized(self, data["filter"])
@@ -179,6 +174,7 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.matchCase = source_phrase.matchCase
         self.parent = source_phrase.parent
         self.show_in_tray_menu = source_phrase.show_in_tray_menu
+        self.enabled = source_phrase.enabled
         self.copy_abbreviation(source_phrase)
         self.copy_hotkey(source_phrase)
         self.copy_window_filter(source_phrase)

@@ -41,6 +41,7 @@ ItemData = NamedTuple(
         ("trigger_modes", Optional[List[TriggerMode]]),
         ("window_filter", Optional[str]),
         ("show_in_tray_menu", bool),
+        ("enabled", bool),
         ("content", str)]
 )
 
@@ -52,6 +53,7 @@ adress_phrases_data = [
         trigger_modes=[TriggerMode.ABBREVIATION],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="22 Avenue Street\nBrisbane\nQLD\n4000")
 ]
 
@@ -63,6 +65,7 @@ my_phrases_data = [
         trigger_modes=[],
         window_filter=".* - gedit",
         show_in_tray_menu=False,
+        enabled=True,
         content="Test phrase number one!"),
     ItemData(
         name="Second phrase",
@@ -71,6 +74,7 @@ my_phrases_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="Test phrase number two!"),
     ItemData(
         name="Third phrase",
@@ -79,6 +83,7 @@ my_phrases_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="Test phrase number three!")
 
 ]
@@ -91,6 +96,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="insert_date"),
     ItemData(
         name="List Menu",
@@ -99,6 +105,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="list_menu"),
     ItemData(
         name="Selection Test",
@@ -107,6 +114,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="selection_test"),
     ItemData(
         name="Abbreviation from selection",
@@ -115,6 +123,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="new_abbreviation_from_selection"),
     ItemData(
         name="Phrase from selection",
@@ -123,6 +132,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=False,
+        enabled=True,
         content="create_phrase_from_selection"),
     ItemData(
         name="Display window info",
@@ -131,6 +141,7 @@ sample_scripts_data = [
         trigger_modes=[],
         window_filter=None,
         show_in_tray_menu=True,
+        enabled=True,
         content="display_window_info")
 ]
 
@@ -155,6 +166,7 @@ def _create_script(data: ItemData, parent: Folder) -> Script:
     # if data.window_filter:  #TOD CJB does this need to be revamped?
     #     item.set_window_titles(data.window_filter)
     item.show_in_tray_menu = data.show_in_tray_menu
+    item.enabled = data.enabled
     parent.add_item(item)
     item.persist()
     return item
@@ -172,6 +184,7 @@ def _create_phrase(data: ItemData, parent: Folder) -> Phrase:
     # if data.window_filter:   #TODO CJB does this need to be revamped
     #     item.set_window_titles(data.window_filter)
     item.show_in_tray_menu = data.show_in_tray_menu
+    item.enabled = data.enabled
     parent.add_item(item)
     item.persist()
     return item

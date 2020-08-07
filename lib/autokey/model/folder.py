@@ -24,6 +24,7 @@ from autokey.configmanager import configmanager_constants as cm_constants
 from autokey.model.phrase import Phrase
 from autokey.model.script import Script
 from autokey.model.helpers import JSON_FILE_PATTERN, MATCH_FILE_PATTERN, get_safe_path, TriggerMode
+from autokey.model.abstract_common import AbstractCommon
 from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
@@ -35,13 +36,14 @@ from lib.autokey.script_runner import ScriptRunner, SimpleScript
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
-class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
+class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     """
     Manages a collection of subfolders/phrases/scripts, which may be associated
     with an abbreviation or hotkey.
     """
 
     def __init__(self, title: str, show_in_tray_menu: bool=False, path: str=None):
+        AbstractCommon.__init__(self, path)
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
@@ -49,11 +51,6 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.folders = []
         self.store = Store()  # For match scripts
         self.items = []  # type: typing.List[Item]
-        self.modes = []  # type: typing.List[TriggerMode]
-        self.usageCount = 0
-        self.show_in_tray_menu = show_in_tray_menu
-        self.parent = None  # type: typing.Optional[Folder]
-        self.path = path
         self.temporary = False
         self.match_script = SimpleScript('', '')
 
@@ -92,6 +89,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "modes": [mode.value for mode in self.modes],  # Store the enum value for compatibility with old user data.
             "usageCount": self.usageCount,
             "showInTrayMenu": self.show_in_tray_menu,
+            "enabled": self.enabled,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self),
@@ -154,11 +152,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
 
     def inject_json_data(self, data):
         self.title = data["title"]
-
-        self.modes = [TriggerMode(item) for item in data["modes"]]
-        self.usageCount = data["usageCount"]
-        self.show_in_tray_menu = data["showInTrayMenu"]
-
+        AbstractCommon.load_from_serialized(self, data)
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
         AbstractWindowFilter.load_from_serialized(self, data["filter"])

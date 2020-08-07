@@ -249,6 +249,7 @@ Folders created within temporary folders must themselves be set temporary")
             # if window_filter:   #TODO CJB this is a big problem, seems the API exposed the simple filter
             #     p.set_window_titles(window_filter)
             p.show_in_tray_menu = show_in_system_tray
+            p.enabled = True
             p.prompt = always_prompt
             p.temporary = temporary
 
