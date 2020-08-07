@@ -77,10 +77,10 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         with open(self.path, "w") as out_file:
             out_file.write(self.phrase)
 
-            try:
-                os.remove(self.match_path)
-            except FileNotFoundError:
-                pass
+        try:
+            os.remove(self.match_path)
+        except FileNotFoundError:
+            pass
         else:
             with open(self.match_path, "w") as out_file:
                 out_file.write(self.match_script.code)
