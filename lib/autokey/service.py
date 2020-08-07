@@ -76,6 +76,7 @@ class Service:
         self.inputStack = collections.deque(maxlen=MAX_STACK_LENGTH)
         self.lastStackState = ''
         self.lastMenu = None
+        self.name = None
 
     def start(self):
         self.mediator = IoMediator(self)
@@ -499,4 +500,3 @@ class PhraseRunner:
             self.clear_last()
         finally:
             mediator.interface.finish_send()
-
