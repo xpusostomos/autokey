@@ -70,7 +70,7 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        with open(self.path + "/.folder.json", 'w') as outFile:
+        with open(self.path + "/folder.json", 'w') as outFile:
             json.dump(self.get_serializable(), outFile, indent=4)
 
         if self.match_script.code == '':
@@ -143,7 +143,7 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
 
     def load_from_serialized(self):
         try:
-            with open(self.path + "/.folder.json", 'r') as inFile:
+            with open(self.path + "/folder.json", 'r') as inFile:
                 data = json.load(inFile)
                 self.inject_json_data(data)
         except Exception:

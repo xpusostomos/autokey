@@ -59,6 +59,8 @@ def upgrade_configuration(configuration_manager, config_data: dict):
     if version < "0.95.3":
         convert_autostart_entries_for_v0_95_3()
     if version < "0.95.12":
+        convertDotFiles_v95_11(config_data)
+    if version < "0.95.12":
         convert_script_filter_for_v0_95_11(config_data, version)
     # Put additional conversion steps here.
 
@@ -131,6 +133,20 @@ def convert_autostart_entries_for_v0_95_3():
             old_autostart_file, new_file_name)
         )
         old_autostart_file.rename(new_file_name)
+
+def convertDotFiles_v95_11(config_data):
+    folders = [*config_data["folders"], *glob.glob(cm_constants.CONFIG_DEFAULT_FOLDER + "/*")]
+    for name in folders:
+        convertDotFiles_v95_11_folder(Path(name))
+
+def convertDotFiles_v95_11_folder(p: Path):
+    for name in p.glob('.*.json'):
+        new_json = p / name.name[1:]
+        name.rename(new_json)
+
+    for name in p.iterdir():
+        if name.is_dir():
+            convertDotFiles_v95_11_folder(name)
 
 def convert_script_filter_for_v0_95_11(config_data, old_version: str):
     folders = [*config_data["folders"], *glob.glob(cm_constants.CONFIG_DEFAULT_FOLDER + "/*")]
