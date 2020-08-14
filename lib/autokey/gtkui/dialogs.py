@@ -27,6 +27,8 @@ import autokey.model.phrase
 import autokey.iomediator.keygrabber
 import autokey.iomediator.windowgrabber
 
+from ..model.abstract_hotkey import FOLDER_KEY_POPUP, FOLDER_KEY_SEQUENCE
+
 GETTEXT_DOMAIN = 'autokey'
 
 locale.setlocale(locale.LC_ALL, '')
@@ -441,12 +443,24 @@ class HotkeySettingsDialog(DialogBase):
         self.metaButton = builder.get_object("metaButton")
         self.setButton = builder.get_object("setButton")
         self.keyLabel = builder.get_object("keyLabel")
+        self.hotKeyTypeBox = builder.get_object("hotKeyTypeBox")
+        self.hotKeyPopupRadio = builder.get_object("hotKeyPopupRadio")
+        self.hotKeySequenceRadio = builder.get_object("hotKeySequenceRadio")
 
         DialogBase.__init__(self)
 
     def load(self, item):
         self.targetItem = item
         self.setButton.set_sensitive(True)
+
+        if isinstance(item, autokey.model.folder.Folder):
+            self.hotKeyTypeBox.show()
+        else:
+            self.hotKeyTypeBox.hide()
+        if item.hotKeyType == FOLDER_KEY_POPUP:
+            self.hotKeyPopupRadio.set_active(True)
+        elif item.hotKeyType == FOLDER_KEY_SEQUENCE:
+            self.hotKeySequenceRadio.set_active(True)
         if autokey.model.helpers.TriggerMode.HOTKEY in item.modes:
             self.controlButton.set_active(Key.CONTROL in item.modifiers)
             self.altButton.set_active(Key.ALT in item.modifiers)
@@ -482,6 +496,10 @@ class HotkeySettingsDialog(DialogBase):
 
         # assert key is not None, "Attempt to set hotkey with no key"
         item.set_hotkey(modifiers, key)
+        if self.hotKeyPopupRadio.get_active():
+            item.hotKeyType = FOLDER_KEY_POPUP
+        elif self.hotKeySequenceRadio.get_active():
+            item.hotKeyType = FOLDER_KEY_SEQUENCE
 
     def reset(self):
         self.controlButton.set_active(False)

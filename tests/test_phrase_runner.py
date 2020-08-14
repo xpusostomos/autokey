@@ -43,7 +43,7 @@ def _generate_phrase(content: str) -> Phrase:
     """
     Generate a Phrase instance with the given content.
     """
-    phrase = Phrase("description", content, '')
+    phrase = Phrase("description", content)
     # A Phrase needs a valid parent, because usage increases the parent’s usage count
     phrase.parent = MagicMock()
     return phrase

@@ -36,14 +36,13 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
     Encapsulates all data and behaviour for a phrase.
     """
 
-    def __init__(self, description, phrase, match_code, path=None):
+    def __init__(self, description, phrase, path=None):
         AbstractCommon.__init__(self, path)
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.phrase = phrase
-        self.match_script = SimpleScript('', '')
         self.prompt = False
         self.temporary = False
         self.omitTrigger = False
@@ -56,16 +55,6 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         else:
             base_name = base_name[:-4]
         self.path = get_safe_path(self.parent.path, base_name, ".txt")
-
-    @property
-    def json_path(self):
-        directory, base_name = os.path.split(self.path[:-4])
-        return JSON_FILE_PATTERN.format(directory, base_name)
-
-    @property
-    def match_path(self):
-        directory, base_name = os.path.split(self.path[:-4])
-        return MATCH_FILE_PATTERN.format(directory, base_name)
 
     def persist(self):
         if self.path is None:
@@ -163,7 +152,6 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
     def copy(self, source_phrase):
         self.description = source_phrase.description
         self.phrase = source_phrase.phrase
-        self.match_script = SimpleScript(source_phrase.match_script.path, source_phrase.match_script.code)
 
         # TODO - re-enable me if restoring predictive functionality
         #if TriggerMode.PREDICTIVE in source_phrase.modes:
@@ -172,9 +160,7 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         self.prompt = source_phrase.prompt
         self.omitTrigger = source_phrase.omitTrigger
         self.matchCase = source_phrase.matchCase
-        self.parent = source_phrase.parent
-        self.show_in_tray_menu = source_phrase.show_in_tray_menu
-        self.enabled = source_phrase.enabled
+        self.copy_common(source_phrase)
         self.copy_abbreviation(source_phrase)
         self.copy_hotkey(source_phrase)
         self.copy_window_filter(source_phrase)

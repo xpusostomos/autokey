@@ -22,22 +22,28 @@ from autokey.model.key import Key
 
 from lib.autokey.script_runner import ScriptRunner
 
+FOLDER_KEY_POPUP = "popup"
+FOLDER_KEY_SEQUENCE = "sequence"
 
-class AbstractHotkey(AbstractWindowFilter):
+class AbstractHotkey:
 
     def __init__(self):
         self.modifiers = []  # type: typing.List[Key]
         self.hotKey = None  # type: typing.Optional[str]
+        self.hotKeyType = None
 
     def get_serializable(self):
         d = {
             "modifiers": self.modifiers,
-            "hotKey": self.hotKey
+            "hotKey": self.hotKey,
+            "hotKeyType": self.hotKeyType
             }
         return d
 
     def load_from_serialized(self, data):
         self.set_hotkey(data["modifiers"], data["hotKey"])
+        self.hotKeyType = data.get("hotKeyType")
+
 
     def copy_hotkey(self, theHotkey):
         [self.modifiers.append(modifier) for modifier in theHotkey.modifiers]

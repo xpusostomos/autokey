@@ -104,7 +104,7 @@ def _convert_v0_70_to_v0_80_folder(folder_data, parent):
     for itemData in folder_data["items"]:
         i = None
         if itemData["type"] == "script":
-            i = autokey.model.script.Script("", "", "")
+            i = autokey.model.script.Script("", "")
             i.code = itemData["code"]
         elif itemData["type"] == "phrase":
             i = autokey.model.phrase.Phrase("", "")
@@ -160,6 +160,7 @@ def _convert_script_filter_for_v0_95_11_folder(f: Folder):
     # f = autokey.model.folder.Folder("", path=folder_data)
     # f.load(parent)
     f.match_script.code = _convert_regex_to_code_for_v0_95_11(f)
+    f.hotKeyType = "popup"
     f.persist()
 
     for subfolder in f.folders:

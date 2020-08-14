@@ -1067,7 +1067,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents", "")
+            newPhrase = autokey.model.phrase.Phrase(name, "Enter phrase contents")
             newIter = theModel.append_item(newPhrase, parentIter)
             newPhrase.persist()
             self.app.monitor.unsuspend()
@@ -1083,7 +1083,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
             self.app.monitor.suspend()
             theModel, selectedPaths = self.treeView.get_selection().get_selected_rows()
             parentIter = self.__getRealParent(theModel[selectedPaths[0]].iter)
-            newScript = autokey.model.script.Script(name, "", "")
+            newScript = autokey.model.script.Script(name, "")
             newIter = theModel.append_item(newScript, parentIter)
             newScript.persist()
             self.app.monitor.unsuspend()
@@ -1119,9 +1119,9 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
 
         for source in sourceObjects:
             if isinstance(source, autokey.model.phrase.Phrase):
-                newObj = autokey.model.phrase.Phrase('', '', '')
+                newObj = autokey.model.phrase.Phrase('', '')
             else:
-                newObj = autokey.model.script.Script('', '', '')
+                newObj = autokey.model.script.Script('', '')
             newObj.copy(source)
             self.cutCopiedItems.append(newObj)
 
@@ -1158,9 +1158,9 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         self.app.monitor.suspend()
 
         if isinstance(source, autokey.model.phrase.Phrase):
-            newObj = autokey.model.phrase.Phrase('', '', '')
+            newObj = autokey.model.phrase.Phrase('', '')
         else:
-            newObj = autokey.model.script.Script('', '', '')
+            newObj = autokey.model.script.Script('', '')
         newObj.copy(source)
         newObj.persist()
 

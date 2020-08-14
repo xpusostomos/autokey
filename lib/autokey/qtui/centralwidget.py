@@ -266,7 +266,7 @@ class CentralWidget(*ui_common.inherits_from_ui_file_with_name("centralwidget"))
         parent_item = tree_widget.selectedItems()[0]  # type: ak_tree.ItemWidgetType
         parent = self.__extractData(parent_item)
 
-        phrase = autokey.model.phrase.Phrase("New Phrase", "Enter phrase contents", "# Enter match code")
+        phrase = autokey.model.phrase.Phrase("New Phrase", "Enter phrase contents")
         new_item = ak_tree.PhraseWidgetItem(parent_item, phrase)
         parent.add_item(phrase)
         phrase.persist()
@@ -285,7 +285,7 @@ class CentralWidget(*ui_common.inherits_from_ui_file_with_name("centralwidget"))
         parent_item = tree_widget.selectedItems()[0]  # type: ak_tree.ItemWidgetType
         parent = self.__extractData(parent_item)
 
-        script = autokey.model.script.Script("New Script", "", "")
+        script = autokey.model.script.Script("New Script", "")
         new_item = ak_tree.ScriptWidgetItem(parent_item, script)
         parent.add_item(script)
         script.persist()
@@ -308,9 +308,9 @@ class CentralWidget(*ui_common.inherits_from_ui_file_with_name("centralwidget"))
 
         for source in source_objects:
             if isinstance(source, autokey.model.phrase.Phrase):
-                new_obj = autokey.model.phrase.Phrase('', '', '')
+                new_obj = autokey.model.phrase.Phrase('', '')
             else:
-                new_obj = autokey.model.script.Script('', '', '')
+                new_obj = autokey.model.script.Script('', '')
             new_obj.copy(source)
             self.cutCopiedItems.append(new_obj)
 
@@ -321,11 +321,11 @@ class CentralWidget(*ui_common.inherits_from_ui_file_with_name("centralwidget"))
         parent = self.__extractData(parent_item)
 
         if isinstance(source_object, autokey.model.phrase.Phrase):
-            new_obj = autokey.model.phrase.Phrase('', '', '')
+            new_obj = autokey.model.phrase.Phrase('', '')
             new_obj.copy(source_object)
             new_item = ak_tree.PhraseWidgetItem(parent_item, new_obj)
         else:
-            new_obj = autokey.model.script.Script('', '', '')
+            new_obj = autokey.model.script.Script('', '')
             new_obj.copy(source_object)
             new_item = ak_tree.ScriptWidgetItem(parent_item, new_obj)
 

@@ -29,6 +29,7 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
+from lib.autokey.model.abstract_collection import AbstractCollection
 from lib.autokey.model.store import Store
 # from lib.autokey.service import ScriptRunner
 from lib.autokey.script_runner import ScriptRunner, SimpleScript
@@ -36,7 +37,7 @@ from lib.autokey.script_runner import ScriptRunner, SimpleScript
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
 
-class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
+class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter, AbstractCollection):
     """
     Manages a collection of subfolders/phrases/scripts, which may be associated
     with an abbreviation or hotkey.
@@ -47,12 +48,12 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
+        AbstractCollection.__init__(self)
         self.title = title
         self.folders = []
         self.store = Store()  # For match scripts
-        self.items = []  # type: typing.List[Item]
+        # self.items = []  # type: typing.List[Item]
         self.temporary = False
-        self.match_script = SimpleScript('', '')
 
     def build_path(self, base_name=None):
         if base_name is None:
@@ -63,6 +64,10 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         else:
             self.path = get_safe_path(cm_constants.CONFIG_DEFAULT_FOLDER, base_name)
 
+    @property
+    def children(self):
+        return [*self.folders, *self.items]
+
     def persist(self):
         if self.path is None:
             self.build_path()
@@ -70,7 +75,7 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        with open(self.path + "/folder.json", 'w') as outFile:
+        with open(self.json_path, 'w') as outFile:
             json.dump(self.get_serializable(), outFile, indent=4)
 
         if self.match_script.code == '':
@@ -122,20 +127,19 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         self.items = []
 
         for entryPath in entries:
-            #entryPath = self.path + '/' + entry
             if os.path.isdir(entryPath):
                 f = Folder("", path=entryPath)
                 f.load(self)
-                self.folders.append(f)
+                self.add_folder(f)
 
             if os.path.isfile(entryPath):
                 i = None
                 if entryPath.endswith(".txt"):
-                    i = Phrase("", "", "", path=entryPath)
+                    i = Phrase("", "", path=entryPath)
                 elif entryPath.endswith(".match.py"):
                     pass
                 elif entryPath.endswith(".py"):
-                    i = Script("", "", "", path=entryPath)
+                    i = Script("", "", path=entryPath)
 
                 if i is not None:
                     i.load(self)
@@ -190,14 +194,6 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
                 # residing user data. Other errors should propagate.
                 if err.errno != errno.ENOTEMPTY:
                     raise
-
-    @property
-    def json_path(self):
-        return JSON_FILE_PATTERN.format(self.path, "folder")
-
-    @property
-    def match_path(self):
-        return MATCH_FILE_PATTERN.format(self.path, "folder")
 
     def get_tuple(self):
         return "folder", self.title, self.get_abbreviations(), self.get_hotkey_string(), self

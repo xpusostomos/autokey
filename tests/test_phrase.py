@@ -59,7 +59,7 @@ def create_phrase(
     """Save typing by wrapping the Phrase constructor, attribute setters and attributes into a single call."""
     if trigger_modes is None:
         trigger_modes = [autokey.model.helpers.TriggerMode.ABBREVIATION]
-    phrase = autokey.model.phrase.Phrase(name, content, '')
+    phrase = autokey.model.phrase.Phrase(name, content)
     if isinstance(abbreviation, str):
         phrase.add_abbreviation(abbreviation)
     else:

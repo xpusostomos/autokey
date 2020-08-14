@@ -82,6 +82,7 @@ class HotkeySettingsDialog(*ui_common.inherits_from_ui_file_with_name("hotkeyset
 
     def load(self, item: Item):
         self.target_item = item
+
         if autokey.model.helpers.TriggerMode.HOTKEY in item.modes:
             self.mod_control_button.setChecked(Key.CONTROL in item.modifiers)
             self.mod_alt_button.setChecked(Key.ALT in item.modifiers)

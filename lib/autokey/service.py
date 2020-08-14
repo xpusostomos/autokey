@@ -38,14 +38,13 @@ import autokey.scripting
 from autokey.configmanager.configmanager import ConfigManager, save_config
 import autokey.configmanager.configmanager_constants as cm_constants
 from lib.autokey import scripting
+from lib.autokey.model.abstract_collection import AbstractCollection
+from lib.autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE
+from lib.autokey.model.folder import Folder
 from lib.autokey.script_runner import ScriptRunner, threaded
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 MAX_STACK_LENGTH = 150
-
-
-
-
 
 def synchronized(lock):
     """ Synchronization decorator. """
@@ -74,6 +73,7 @@ class Service:
         self.mediator = None
         self.app = app
         self.inputStack = collections.deque(maxlen=MAX_STACK_LENGTH)
+        self.sequenceContext: AbstractCollection = self.configManager
         self.lastStackState = ''
         self.lastMenu = None
         self.name = None
@@ -160,12 +160,26 @@ class Service:
 
         if self.__shouldProcess(window_info):
             itemMatch = None
+            folderMatch = None
             menu = None
-
-            for item in self.configManager.hotKeys:
+            sequence = self.sequenceContext
+            self.sequenceContext = self.configManager
+            for item in sequence.children:
                 if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
-                    itemMatch = item
+                    if isinstance(item, Folder):
+                        if item.hotKeyType == FOLDER_KEY_SEQUENCE:
+                            self.sequenceContext = item
+                        else:
+                            folderMatch = item
+                    else:
+                        itemMatch = item
                     break
+
+            if itemMatch is not None and folderMatch is not None and self.sequenceContext == self.configManager:
+                for item in self.configManager.hotKeys:
+                    if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
+                        itemMatch = item
+                        break
             print("itemMatch: " + str(itemMatch))
             if itemMatch is not None:
                 logger.info('Matched {} "{}" with hotkey and prompt={}'.format(
@@ -380,6 +394,7 @@ class Service:
 
     def __processItem(self, item, buffer=''):
         self.inputStack.clear()
+        self.sequenceContext = self.configManager
         self.lastStackState = ''
 
         if isinstance(item, autokey.model.phrase.Phrase):

@@ -267,7 +267,7 @@ class Application(QApplication):
         os.remove(common.LOCK_FILE)  # TODO: maybe use atexit to remove the lock/pid file?
         logger.debug("All shutdown tasks complete... quitting")
 
-    def notify_error(self, error: autokey.model.script.ScriptErrorRecord):
+    def notify_error(self, error: autokey.script_runner.ScriptErrorRecord):
         """
         Show an error notification popup.
 

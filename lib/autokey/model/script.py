@@ -40,16 +40,14 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
     Encapsulates all data and behaviour for a script.
     """
 
-    def __init__(self, description: str, source_code: str, match_code: str, path=None):
+    def __init__(self, description: str, source_code: str, path=None):
         AbstractCommon.__init__(self, path)
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
         self.description = description
         self.script = SimpleScript(path, source_code)
-        self.match_script = SimpleScript(self.match_path, match_code)
         # self.code = source_code
-        # self.match_code = match_code
         # self.store = Store()
         self.prompt = False
         self.omitTrigger = False
@@ -60,16 +58,6 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         else:
             base_name = base_name[:-3]
         self.path = get_safe_path(self.parent.path, base_name, ".py")
-
-    @property
-    def json_path(self):
-        directory, base_name = os.path.split(self.path[:-3])
-        return JSON_FILE_PATTERN.format(directory, base_name)
-
-    @property
-    def match_path(self):
-        directory, base_name = os.path.split(self.path[:-3])
-        return MATCH_FILE_PATTERN.format(directory, base_name)
 
     def persist(self):
         if self.path is None:
@@ -99,7 +87,7 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
             "prompt": self.prompt,
             "omitTrigger": self.omitTrigger,
             "showInTrayMenu": self.show_in_tray_menu,
-            "enabed": self.enabled,
+            "enabled": self.enabled,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self)
@@ -217,13 +205,9 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
     def copy(self, source_script):
         self.description = source_script.description
         self.script = Script(source_script.script.path, source_script.script.code)
-        self.match_script = Script(source_script.match_script.path, source_script.match_script.code)
-
         self.prompt = source_script.prompt
         self.omitTrigger = source_script.omitTrigger
-        self.parent = source_script.parent
-        self.show_in_tray_menu = source_script.show_in_tray_menu
-        self.enabled = source_script.enabled
+        self.copy_common(source_script)
         self.copy_abbreviation(source_script)
         self.copy_hotkey(source_script)
         self.copy_window_filter(source_script)

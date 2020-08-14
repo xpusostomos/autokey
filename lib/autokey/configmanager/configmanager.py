@@ -43,6 +43,9 @@ import autokey.configmanager.predefined_user_files
 from autokey.iomediator.constants import X_RECORD_INTERFACE
 from autokey.model.key import MODIFIERS
 
+from lib.autokey.model.abstract_collection import AbstractCollection
+from lib.autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE, FOLDER_KEY_POPUP
+from lib.autokey.model.folder import Folder
 from lib.autokey.script_runner import ScriptRunner, SimpleScript
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
@@ -149,7 +152,7 @@ def apply_settings(settings):
         ConfigManager.SETTINGS[key] = value
 
 
-class ConfigManager:
+class ConfigManager(AbstractCollection):
     """
     Contains all application configuration, and provides methods for updating and
     maintaining consistency of the configuration.
@@ -197,7 +200,7 @@ class ConfigManager:
         self.lock = threading.Lock()
 
         self.app = app
-        self.folders = []
+        self.folders: [Folder] = []
         self.userCodeDir = None  # type: str
 
         self.configHotkey = GlobalHotkey()
@@ -207,7 +210,7 @@ class ConfigManager:
         self.toggleServiceHotkey = GlobalHotkey()
         self.toggleServiceHotkey.set_hotkey(["<super>", "<shift>"], "k")
         self.toggleServiceHotkey.enabled = True
-
+        self.items = []
         # Set the attribute to the default first. Without this, AK breaks, if started for the first time. See #274
         self.workAroundApps = re.compile(self.SETTINGS[WORKAROUND_APP_REGEX])
 
@@ -220,7 +223,6 @@ class ConfigManager:
 
         if self.folders:
             return
-
         # --- Code below here only executed if no persisted config data provided
 
         logger.info("No configuration found - creating new one")
@@ -232,6 +234,10 @@ class ConfigManager:
         self.recentEntries = []
 
         self.config_altered(True)
+
+    @property
+    def children(self):
+        return self.folders
 
     def get_serializable(self):
         extraFolders = []
@@ -337,9 +343,9 @@ class ConfigManager:
                 if i is None:
                     isNew = True
                     if baseName.endswith(".txt"):
-                        i = autokey.model.phrase.Phrase("", "", "", path=path)
+                        i = autokey.model.phrase.Phrase("", "", path=path)
                     elif baseName.endswith(".py"):
-                        i = autokey.model.script.Script("", "", "", path=path)
+                        i = autokey.model.script.Script("", "", path=path)
 
                 if i is not None:
                     folder = self.__checkExistingFolder(directory)
@@ -531,6 +537,7 @@ class ConfigManager:
         #    self.folders.append(folder)
 
         self.hotKeyFolders = []
+        self.topLevelSequenceFolders = []
         self.hotKeys = []
 
         self.abbreviations = []
@@ -540,7 +547,10 @@ class ConfigManager:
 
         for folder in self.folders:
             if autokey.model.helpers.TriggerMode.HOTKEY in folder.modes:
-                self.hotKeyFolders.append(folder)
+                if folder.hotKeyType == FOLDER_KEY_POPUP:
+                    self.hotKeyFolders.append(folder)
+                elif folder.hotKeyType == FOLDER_KEY_SEQUENCE:
+                    self.topLevelSequenceFolders.append(folder)
             self.allFolders.append(folder)
 
             if not self.app.monitor.has_watch(folder.path):
@@ -570,7 +580,10 @@ class ConfigManager:
 
         for folder in parentFolder.folders:
             if autokey.model.helpers.TriggerMode.HOTKEY in folder.modes:
-                self.hotKeyFolders.append(folder)
+                if folder.hotKeyMode == FOLDER_KEY_POPUP:
+                    self.hotKeyFolders.append(folder)
+                elif folder.hotKeyMode == FOLDER_KEY_SEQUENCE and folder.parent.hotKeyType != FOLDER_KEY_SEQUENCE:
+                    self.topLevelSequenceFolders.append(folder)
             self.allFolders.append(folder)
 
             if not self.app.monitor.has_watch(folder.path):
@@ -579,7 +592,7 @@ class ConfigManager:
             self.__processFolder(folder)
 
         for item in parentFolder.items:
-            if autokey.model.helpers.TriggerMode.HOTKEY in item.modes:
+            if autokey.model.helpers.TriggerMode.HOTKEY in item.modes and parentFolder.hotKeyType != FOLDER_KEY_SEQUENCE:
                 self.hotKeys.append(item)
             if autokey.model.helpers.TriggerMode.ABBREVIATION in item.modes:
                 self.abbreviations.append(item)
@@ -609,7 +622,7 @@ class ConfigManager:
                 else:
                     description = theEntry
 
-                p = autokey.model.phrase.Phrase(description, theEntry, "")
+                p = autokey.model.phrase.Phrase(description, theEntry)
                 if self.SETTINGS[RECENT_ENTRY_SUGGEST]:
                     p.set_modes([autokey.model.helpers.TriggerMode.PREDICTIVE])
 
@@ -803,6 +816,9 @@ class GlobalHotkey(autokey.model.abstract_hotkey.AbstractHotkey):
             logger.debug("Triggered global hotkey using modifiers: %r key: %r", modifiers, key)
             self.closure()
         return False
+
+    def _should_trigger_window_title(self, window_info, script_runner: ScriptRunner):
+        return True
 
     def get_hotkey_string(self, key=None, modifiers=None):
         if key is None and modifiers is None:
