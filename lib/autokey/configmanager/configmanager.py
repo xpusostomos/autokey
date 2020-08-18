@@ -43,10 +43,12 @@ import autokey.configmanager.predefined_user_files
 from autokey.iomediator.constants import X_RECORD_INTERFACE
 from autokey.model.key import MODIFIERS
 
-from lib.autokey.model.abstract_collection import AbstractCollection
-from lib.autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE, FOLDER_KEY_POPUP
-from lib.autokey.model.folder import Folder
-from lib.autokey.script_runner import ScriptRunner, SimpleScript
+from autokey.model.abstract_collection import AbstractCollection
+from autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE, FOLDER_KEY_POPUP
+from autokey.model.folder import Folder
+from autokey.script_runner import ScriptRunner, SimpleScript
+
+from autokey.interface import XInterfaceBase
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -238,6 +240,12 @@ class ConfigManager(AbstractCollection):
     @property
     def children(self):
         return self.folders
+
+    def grab(self, interface: XInterfaceBase):
+        interface.grabAllHotKeys()
+
+    def ungrab(self, interface: XInterfaceBase):
+        interface.ungrabAllHotKeys()
 
     def get_serializable(self):
         extraFolders = []
@@ -537,7 +545,7 @@ class ConfigManager(AbstractCollection):
         #    self.folders.append(folder)
 
         self.hotKeyFolders = []
-        self.topLevelSequenceFolders = []
+        # self.topLevelSequenceFolders = []
         self.hotKeys = []
 
         self.abbreviations = []
@@ -547,10 +555,10 @@ class ConfigManager(AbstractCollection):
 
         for folder in self.folders:
             if autokey.model.helpers.TriggerMode.HOTKEY in folder.modes:
-                if folder.hotKeyType == FOLDER_KEY_POPUP:
-                    self.hotKeyFolders.append(folder)
-                elif folder.hotKeyType == FOLDER_KEY_SEQUENCE:
-                    self.topLevelSequenceFolders.append(folder)
+                # if folder.hotKeyType == FOLDER_KEY_POPUP:
+                self.hotKeyFolders.append(folder)
+                # elif folder.hotKeyType == FOLDER_KEY_SEQUENCE:
+                #     self.topLevelSequenceFolders.append(folder)
             self.allFolders.append(folder)
 
             if not self.app.monitor.has_watch(folder.path):
@@ -579,11 +587,10 @@ class ConfigManager(AbstractCollection):
             self.app.monitor.add_watch(parentFolder.path)
 
         for folder in parentFolder.folders:
-            if autokey.model.helpers.TriggerMode.HOTKEY in folder.modes:
-                if folder.hotKeyMode == FOLDER_KEY_POPUP:
-                    self.hotKeyFolders.append(folder)
-                elif folder.hotKeyMode == FOLDER_KEY_SEQUENCE and folder.parent.hotKeyType != FOLDER_KEY_SEQUENCE:
-                    self.topLevelSequenceFolders.append(folder)
+            if autokey.model.helpers.TriggerMode.HOTKEY in folder.modes and folder.parent.hotKeyType != FOLDER_KEY_SEQUENCE:
+                self.hotKeyFolders.append(folder)
+                # elif folder.hotKeyMode == FOLDER_KEY_SEQUENCE and folder.parent.hotKeyType != FOLDER_KEY_SEQUENCE:
+                #     self.topLevelSequenceFolders.append(folder)
             self.allFolders.append(folder)
 
             if not self.app.monitor.has_watch(folder.path):

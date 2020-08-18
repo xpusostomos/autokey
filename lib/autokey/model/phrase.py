@@ -26,7 +26,7 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
-from lib.autokey.script_runner import ScriptRunner, SimpleScript
+from autokey.script_runner import ScriptRunner, SimpleScript
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 

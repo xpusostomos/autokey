@@ -1,7 +1,24 @@
+# Copyright (C) 2011 Chris Dekter
+# Copyright (C) 2019-2020 Thomas Hess <thomas.hess@udo.edu>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import typing
 import os
 
-from lib.autokey.model.helpers import TriggerMode, JSON_FILE_PATTERN, MATCH_FILE_PATTERN
-from lib.autokey.script_runner import SimpleScript
+from autokey.model.helpers import TriggerMode, JSON_FILE_PATTERN, MATCH_FILE_PATTERN
+from autokey.script_runner import SimpleScript
 
 
 class AbstractCommon:
@@ -23,9 +40,9 @@ class AbstractCommon:
         self.show_in_tray_menu = data.get("showInTrayMenu")
 
     def copy_common(self, item):
-        self.match_script = SimpleScript(source_phrase.match_script.path, source_phrase.match_script.code)
-        self.parent = source_phrase.parent
-        self.show_in_tray_menu = source_phrase.show_in_tray_menu
+        self.match_script = SimpleScript(item.match_script.path, item.match_script.code)
+        self.parent = item.parent
+        self.show_in_tray_menu = item.show_in_tray_menu
         self.enabled = item.enabled
 
     @property

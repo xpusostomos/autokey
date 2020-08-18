@@ -23,5 +23,6 @@ class AbstractCollection:
     """
 
     def __init__(self):
-        pass
+        self.items = []
+        self.folders = []
 

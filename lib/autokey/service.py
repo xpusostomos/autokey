@@ -37,11 +37,12 @@ from autokey.macro import MacroManager
 import autokey.scripting
 from autokey.configmanager.configmanager import ConfigManager, save_config
 import autokey.configmanager.configmanager_constants as cm_constants
-from lib.autokey import scripting
-from lib.autokey.model.abstract_collection import AbstractCollection
-from lib.autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE
-from lib.autokey.model.folder import Folder
-from lib.autokey.script_runner import ScriptRunner, threaded
+from autokey import scripting
+from autokey.model.abstract_collection import AbstractCollection
+from autokey.model.abstract_hotkey import FOLDER_KEY_SEQUENCE
+from autokey.script_runner import ScriptRunner, threaded
+
+from autokey.model.abstract_hotkey import FOLDER_KEY_POPUP
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 MAX_STACK_LENGTH = 150
@@ -73,7 +74,7 @@ class Service:
         self.mediator = None
         self.app = app
         self.inputStack = collections.deque(maxlen=MAX_STACK_LENGTH)
-        self.sequenceContext: AbstractCollection = self.configManager
+        self.sequenceContext: typing.List[AbstractCollection] = [self.configManager]
         self.lastStackState = ''
         self.lastMenu = None
         self.name = None
@@ -148,6 +149,39 @@ class Service:
     #         self.scriptRunner.execute_match(filter_item, scope)
     #         return scope["window"].match
 
+    def change_context(self, context):
+        if self.sequenceContext != context:
+            if self.sequenceContext != self.configManager:
+                self.sequenceContext.ungrab(self.mediator.interface)
+            self.sequenceContext = context
+            if self.sequenceContext != self.configManager:
+                self.sequenceContext.grab(self.mediator.interface)
+
+    def check_match(self, rawKey, modifiers, key, window_info, sequence):
+        itemMatch = None
+        # folderMatch = None
+        for item in sequence.children:
+            if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
+                if isinstance(item, autokey.model.folder.Folder):
+                    if item.hotKeyType == FOLDER_KEY_SEQUENCE:
+                        itemMatch = item
+                        print("sequence: " + str(item))
+                        self.change_context(item)
+                    else:
+                        itemMatch = item
+                        self.change_context(self.configManager)
+                else:
+                    itemMatch = item
+                    self.change_context(self.configManager)
+                break
+            elif isinstance(item, autokey.model.folder.Folder) and\
+                not item.hotKeyType == FOLDER_KEY_SEQUENCE and\
+                item._should_trigger_window_title(window_info, self.matchRunner):
+                itemMatch = self.check_match(rawKey, modifiers, key, window_info, item) # TODO should we reset sequenceContext here, or if not where
+                if itemMatch is not None:
+                    break
+        return itemMatch
+
     def handle_keypress(self, rawKey, modifiers, key, window_info):
         print("handle_keypress")
         logger.debug("Raw key: %r, modifiers: %r, Key: %s", rawKey, modifiers, key)
@@ -159,43 +193,43 @@ class Service:
             hotkey.check_hotkey(modifiers, rawKey, window_info, self.matchRunner)
 
         if self.__shouldProcess(window_info):
-            itemMatch = None
-            folderMatch = None
+            # itemMatch = None
+            # folderMatch = None
             menu = None
             sequence = self.sequenceContext
-            self.sequenceContext = self.configManager
-            for item in sequence.children:
-                if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
-                    if isinstance(item, Folder):
-                        if item.hotKeyType == FOLDER_KEY_SEQUENCE:
-                            self.sequenceContext = item
-                        else:
-                            folderMatch = item
-                    else:
-                        itemMatch = item
-                    break
+            #self.sequenceContext = self.configManager
+            itemMatch = self.check_match(rawKey, modifiers, key, window_info, sequence)
+            # for item in sequence.children:
+            #     if item.check_hotkPOPUPey(modifiers, rawKey, window_info, self.matchRunner):
+            #         if isinstance(item, autokey.model.folder.Folder):
+            #             if item.hotKeyType == FOLDER_KEY_SEQUENCE:
+            #                 self.sequenceContext = item
+            #             else:
+            #                 folderMatch = item
+            #         else:
+            #             itemMatch = item
+            #         break
 
-            if itemMatch is not None and folderMatch is not None and self.sequenceContext == self.configManager:
-                for item in self.configManager.hotKeys:
-                    if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
-                        itemMatch = item
-                        break
+            # if itemMatch is None and folderMatch is None and self.sequenceContext == self.configManager:
+            #     for item in self.configManager.hotKeys:
+            #         if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
+            #             itemMatch = item
+            #             break
+            #
+            # if itemMatch is None and folderMatch is None and self.sequenceContext == self.configManager:
+            #     for folder in self.configManager.hotKeyFolders:
+            #         if folder.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
+            #             folderMatch = folder
+
             print("itemMatch: " + str(itemMatch))
-            if itemMatch is not None:
-                logger.info('Matched {} "{}" with hotkey and prompt={}'.format(
-                    itemMatch.__class__.__name__, itemMatch.description, itemMatch.prompt
-                ))
-                if itemMatch.prompt:
-                    menu = ([], [itemMatch])
-
-            else:
-                for folder in self.configManager.hotKeyFolders:
-                    print("check folder: " + folder.path)
-                    if folder.check_hotkey(modifiers, rawKey, window_info, self.matchRunner): #TODO CJB
-                        print("found folder: " + folder.path)
-                        #menu = PopupMenu(self, [folder], [])
-                        menu = ([folder], [])
-
+            if itemMatch is not None and isinstance(itemMatch, autokey.model.folder.Folder):
+                if itemMatch.hotKeyType == FOLDER_KEY_POPUP:
+                    menu = ([itemMatch], [])
+                else:
+                    itemMatch = None
+            elif itemMatch is not None and itemMatch.prompt:  #TODO... is "prompt" the eqivilent of "popup"?
+                menu = ([], [itemMatch])
+                itemMatch = None
 
             if menu is not None:
                 logger.debug("Matched Folder with hotkey - showing menu")
@@ -206,11 +240,13 @@ class Service:
                 self.lastMenu = menu
                 #self.lastMenu.show_on_desktop()
                 self.app.show_popup_menu(*menu)
-
-            if itemMatch is not None:
+            elif itemMatch is not None:
                 print("itemMatch is not None")
                 self.__tryReleaseLock()
                 self.__processItem(itemMatch)
+            else:
+                print("No item match: " + key)
+            #     self.mediator.interface.__send_modified_key(key, modifiers)
 
 
             ### --- end of hotkey processing --- ###

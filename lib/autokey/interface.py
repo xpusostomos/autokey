@@ -259,7 +259,19 @@ class XInterfaceBase(threading.Thread):
         else:
             logger.debug("Ignored keymap change event")
 
-    def __delayedInitMappings(self):        
+    def ungrabAllHotKeys(self):
+        self.__enqueue(self.__ungrabAllHotkeys)
+
+    def grabAllHotKeys(self):
+        self.__enqueue(self.__grabHotkeys)
+
+    def grabHotKeys(self, hotkeys):
+        self.__enqueue(self.__grabHotKeyList, hotkeys)
+
+    def ungrabHotKeys(self, hotkeys):
+        self.__enqueue(self.__ungrabHotKeyList, hotkeys)
+
+    def __delayedInitMappings(self):
         self.__initMappings()
         self.__ignoreRemap = False
 
@@ -337,7 +349,7 @@ class XInterfaceBase(threading.Thread):
     def __needsMutterWorkaround(self, item):
         if Key.SUPER not in item.modifiers:
             return False
-    
+        print("********* MUTTER WORKAROUND *********** " + str(item))
         try:
             output = subprocess.check_output(["ps", "-eo", "command"]).decode()
         except subprocess.CalledProcessError:
@@ -364,7 +376,9 @@ class XInterfaceBase(threading.Thread):
                 self.__enqueue(self.__grabHotkey, item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__enqueue(self.__grabRecurse, item, self.rootWindow, False)
+        self.__grabHotKeyList(hotkeys)
 
+    def __grabHotKeyList(self, hotkeys):
         # Grab hotkeys without a filter in root window
         for item in hotkeys:
             if not item.has_applicable_filter():
@@ -385,7 +399,6 @@ class XInterfaceBase(threading.Thread):
             try:
                 window_info = self.get_window_info(window, False)
                 if window_info.wm_title or window_info.wm_class:
-                    print("recurseTree: " + str(window_info))
                     for item in hotkeys:
                         if item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.matchRunner):
                             self.__grabHotkey(item.hotKey, item.modifiers, window)
@@ -408,7 +421,10 @@ class XInterfaceBase(threading.Thread):
                 self.__ungrabHotkey(item.hotKey, item.modifiers, self.rootWindow)
                 if self.__needsMutterWorkaround(item):
                     self.__ungrabRecurse(item, self.rootWindow, False)
-        
+
+        self.__ungrabHotKeyList(hotkeys)
+
+    def __ungrabHotKeyList(self, hotkeys):
         # Ungrab hotkeys without a filter in root window, recursively
         for item in hotkeys:
             if not item.has_applicable_filter():
@@ -458,7 +474,6 @@ class XInterfaceBase(threading.Thread):
         """
         Grab a specific hotkey in the given window
         """
-        print("Grabbing hotkey: %r %r %s", modifiers, key, str(self.get_window_info(window)))
         logger.debug("Grabbing hotkey: %r %r", modifiers, key)
         try:
             keycode = self.__lookupKeyCode(key)
@@ -507,7 +522,6 @@ class XInterfaceBase(threading.Thread):
             if checkWinInfo:
                 window_info = self.get_window_info(window, False)
                 shouldTrigger = item._should_trigger_window_title(window_info, self.mediator.service.scriptRunner)
-                print("grabRecurse: " + str(window_info) + " st: " + str(shouldTrigger))
 
             if shouldTrigger or not checkWinInfo:
                 self.__grabHotkey(item.hotKey, item.modifiers, window)

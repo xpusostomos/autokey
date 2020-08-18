@@ -674,6 +674,7 @@ class WindowFilterSettingsDialog(DialogBase):
         if not isinstance(item, autokey.model.folder.Folder):
             self.recursiveButton.hide()
         else:
+            self.recursiveButton.set_active(item.isRecursive)
             self.recursiveButton.show()
 
         if not item.has_filter():

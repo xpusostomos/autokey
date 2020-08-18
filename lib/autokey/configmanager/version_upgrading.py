@@ -44,8 +44,8 @@ from autokey import common
 import autokey.configmanager.configmanager_constants as cm_constants
 import glob
 
-from lib.autokey.model.abstract_window_filter import AbstractWindowFilter
-from lib.autokey.model.folder import Folder
+from autokey.model.abstract_window_filter import AbstractWindowFilter
+from autokey.model.folder import Folder
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -159,8 +159,10 @@ def convert_script_filter_for_v0_95_11(config_data, old_version: str):
 def _convert_script_filter_for_v0_95_11_folder(f: Folder):
     # f = autokey.model.folder.Folder("", path=folder_data)
     # f.load(parent)
-    f.match_script.code = _convert_regex_to_code_for_v0_95_11(f)
-    f.hotKeyType = "popup"
+    if f.match_script.code == '':
+        f.match_script.code = _convert_regex_to_code_for_v0_95_11(f)
+    if f.hotKeyType is None:
+        f.hotKeyType = "popup"
     f.persist()
 
     for subfolder in f.folders:
@@ -168,7 +170,8 @@ def _convert_script_filter_for_v0_95_11_folder(f: Folder):
 
     for i in f.items:
         i.load(f)
-        i.match_script.code = _convert_regex_to_code_for_v0_95_11(i)
+        if i.match_script.code == '':
+            i.match_script.code = _convert_regex_to_code_for_v0_95_11(i)
         i.persist()
 
 def _convert_regex_to_code_for_v0_95_11(item: AbstractWindowFilter):

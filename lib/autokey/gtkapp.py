@@ -162,7 +162,7 @@ class Application:
         self.configManager.config_altered(persistGlobal)
         self.notifier.rebuild_menu()
 
-    def hotkey_created(self, item):
+    def hotkey_created(self, item):  #TODO don't do this for sequences
         logger.debug("Created hotkey: %r %s", item.modifiers, item.hotKey)
         self.service.mediator.interface.grab_hotkey(item)
 

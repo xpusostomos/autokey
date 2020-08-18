@@ -28,9 +28,9 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
-from lib.autokey.script_runner import SimpleScript, ScriptRunner
+from autokey.script_runner import SimpleScript, ScriptRunner
 
-# from lib.autokey.service import ScriptRunner
+# from autokey.service import ScriptRunner
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -81,7 +81,7 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         d = {
             "type": "script",
             "description": self.description,
-            "store": self.store,
+            "store": self.script.store,
             "modes": [mode.value for mode in self.modes],  # Store the enum value for compatibility with old user data.
             "usageCount": self.usageCount,
             "prompt": self.prompt,
@@ -177,7 +177,7 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
 
     def inject_json_data(self, data: dict):
         self.description = data["description"]
-        self.store = Store(data["store"])
+        self.script.store = Store(data["store"])
         self.prompt = data["prompt"]
         self.omitTrigger = data["omitTrigger"]
         AbstractCommon.load_from_serialized(self, data)
@@ -202,9 +202,9 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
             if os.path.exists(self.json_path):
                 os.remove(self.json_path)
 
-    def copy(self, source_script):
+    def copy(self, source_script):  #TODO copying and file name duplicates doesn't really work.
         self.description = source_script.description
-        self.script = Script(source_script.script.path, source_script.script.code)
+        self.script = SimpleScript(source_script.script.path, source_script.script.code)
         self.prompt = source_script.prompt
         self.omitTrigger = source_script.omitTrigger
         self.copy_common(source_script)

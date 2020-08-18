@@ -182,7 +182,7 @@ class SettingsWidget:
         # else: #TODO CJB why did this exist
         #     self.currentItem.set_window_titles(None)
 
-        if self.hotkeyEnabled:  #TODO CJB what does this do
+        if self.hotkeyEnabled:  #TODO CJB what does this do: grabs xwindow key
             self.parentWindow.app.hotkey_created(self.currentItem)
 
     def set_dirty(self):
@@ -268,7 +268,7 @@ class SettingsWidget:
             self.clearHotkeyButton.set_sensitive(True)
 
     def on_clearHotkeyButton_clicked(self, widget, data=None):
-        self.set_dirty()
+        self.set_dirty()   # TODO Clear button doens't work
         self.hotkeyEnabled = False
         self.clearHotkeyButton.set_sensitive(False)
         self.hotkeyLabel.set_text(_(AbstractWindowFilter.NONE_CONFIGURED))
@@ -466,6 +466,7 @@ class ScriptPage:
         self.editor.set_tab_width(4)
 
         self.ui.show_all()
+
 
     def load(self, theScript):
         self.currentItem = theScript
@@ -1426,7 +1427,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         self.app.monitor.suspend()
 
         for path in self.__sourceRows:
-            self.__removeItem(theModel, theModel[path].iter)
+            self.__removeItem(theModel, theModel[path].iter)   #TODO drag and drop of multiple items crashes
 
         newIters = []
         for item in self.__sourceObjects:

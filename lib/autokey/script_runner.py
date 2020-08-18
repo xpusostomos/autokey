@@ -5,9 +5,9 @@ import datetime
 import traceback
 import typing
 import time
-# from lib.autokey.model.store import Store
-# from lib.autokey.service import threaded
-from lib.autokey.model.store import Store
+# from autokey.model.store import Store
+# from autokey.service import threaded
+from autokey.model.store import Store
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 

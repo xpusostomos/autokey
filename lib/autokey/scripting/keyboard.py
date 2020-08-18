@@ -44,7 +44,7 @@ class Keyboard:
         @param key_string: string of keys to send. Special keys are only possible in keyboard mode.
         @param send_mode: Determines how the string is send.
         """
-
+        print("send_keys: " + key_string)
         if not isinstance(key_string, str):
             raise TypeError("Only strings can be sent using this function")
         send_mode = _validate_send_mode(send_mode)

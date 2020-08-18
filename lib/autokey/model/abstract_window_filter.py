@@ -16,9 +16,7 @@
 
 import re
 
-from lib.autokey.script_runner import ScriptRunner
-
-
+from autokey.script_runner import ScriptRunner
 
 class AbstractWindowFilter:
 
@@ -34,7 +32,7 @@ class AbstractWindowFilter:
         #     return {"regex": self.windowInfoRegex.pattern, "isRecursive": self.isRecursive}
         # else:
         # return {"regex": None, "isRecursive": False}
-        return {"isRecursive": False}
+        return {"isRecursive": self.isRecursive}
 
     def load_from_serialized(self, data):
         try:
@@ -118,8 +116,6 @@ class AbstractWindowFilter:
             rtn += AbstractWindowFilter.get_filter_display_text_from(item.match_script.code)
         else:
             rtn = AbstractWindowFilter.NONE_CONFIGURED
-        if len(rtn) > 80:
-            rtn = rtn[:80] + '...'
         return rtn
 
     @staticmethod
@@ -129,6 +125,8 @@ class AbstractWindowFilter:
         rtn += match_code.replace('\n', ' ')
         if rtn == '':
             rtn = AbstractWindowFilter.NONE_CONFIGURED
+        if len(rtn) > 40:
+            rtn = rtn[:40] + '...'
         return rtn
 
     # def same_filter_as_item(self, otherItem):
@@ -157,8 +155,8 @@ class AbstractWindowFilter:
     #         return True
 
     def _should_trigger_window_title(self, window_info, script_runner: ScriptRunner):
-        # print("should_trigger_window_title: " + str(window_info) + " " + self.path)
         filter_item = self.get_applicable_filter()
+        # print("_should_trigger_window_title: "+ str(self) + " applicable filter: " + str(filter_item))
         if filter_item is None:
             return True
         # elif item.windowInfoRegex is not None:
@@ -172,5 +170,5 @@ class AbstractWindowFilter:
             # script_runner.execute_match(filter_item, scope)
             script_runner.execute_script(filter_item.match_script)
             # if scope["window"].match:
-            print("should_trigger_window_title: " + str(window_info) + " " + str(scope["window"].match))
+            # print("should_trigger_window_title: " + str(window_info) + " " + str(scope["window"].match))
             return scope["window"].match

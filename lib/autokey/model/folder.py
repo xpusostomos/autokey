@@ -29,10 +29,14 @@ from autokey.model.abstract_abbreviation import AbstractAbbreviation
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.abstract_hotkey import AbstractHotkey
 
-from lib.autokey.model.abstract_collection import AbstractCollection
-from lib.autokey.model.store import Store
-# from lib.autokey.service import ScriptRunner
-from lib.autokey.script_runner import ScriptRunner, SimpleScript
+from autokey.model.abstract_collection import AbstractCollection
+from autokey.model.store import Store
+# from autokey.service import ScriptRunner
+from autokey.script_runner import ScriptRunner, SimpleScript
+
+from autokey.interface import XInterfaceBase
+
+from autokey.model.abstract_hotkey import FOLDER_KEY_POPUP
 
 logger = __import__("autokey.logger").logger.get_logger(__name__)
 
@@ -187,7 +191,7 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
             try:
                 # The json file must be removed first. Otherwise the rmdir will fail.
                 if os.path.exists(self.json_path):
-                    os.remove(self.get_json_path())
+                    os.remove(self.json_path)
                 os.rmdir(self.path)
             except OSError as err:
                 # There may be user data in the removed directory. Only swallow the error, if it is caused by
@@ -199,12 +203,14 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         return "folder", self.title, self.get_abbreviations(), self.get_hotkey_string(), self
 
     def set_modes(self, modes: typing.List[TriggerMode]):
-        self.modes = modes
+        self.modes = modes    #TODO somehow modes get duplicates when saving.
 
     def add_folder(self, folder):
         folder.parent = self
         #self.folders[folder.title] = folder
         self.folders.append(folder)
+        # Sorting normal folders before Sequence folders allows the user to arrange priority hierarchies.
+        self.folders.sort(key=lambda x: 0 if x.hotKeyType == FOLDER_KEY_POPUP else 1)
 
     def remove_folder(self, folder):
         #del self.folders[folder.title]
@@ -267,6 +273,12 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
             return self.parent.calculate_input(buffer)
 
         return 0
+
+    def grab(self, interface: XInterfaceBase):
+        interface.grabHotKeys(self.children)
+
+    def ungrab(self, interface: XInterfaceBase):
+        interface.ungrabHotKeys(self.children)
 
     """def __cmp__(self, other):
         if self.usageCount != other.usageCount:

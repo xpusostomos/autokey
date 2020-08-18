@@ -20,7 +20,7 @@ from autokey.model.helpers import TriggerMode
 from autokey.model.abstract_window_filter import AbstractWindowFilter
 from autokey.model.key import Key
 
-from lib.autokey.script_runner import ScriptRunner
+from autokey.script_runner import ScriptRunner
 
 FOLDER_KEY_POPUP = "popup"
 FOLDER_KEY_SEQUENCE = "sequence"
@@ -63,8 +63,8 @@ class AbstractHotkey:
             self.modes.remove(TriggerMode.HOTKEY)
 
     def check_hotkey(self, modifiers, key, windowTitle, match_runner: ScriptRunner):  #TODO chris
-        if self.hotKey is not None and self._should_trigger_window_title(windowTitle, match_runner):
-            return (self.modifiers == modifiers) and (self.hotKey == key)
+        if self.hotKey is not None and self.modifiers == modifiers and self.hotKey == key and self._should_trigger_window_title(windowTitle, match_runner):
+            return True
         else:
             return False
 
