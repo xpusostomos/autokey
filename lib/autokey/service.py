@@ -75,6 +75,7 @@ class Service:
         self.app = app
         self.inputStack = collections.deque(maxlen=MAX_STACK_LENGTH)
         self.sequenceContext: typing.List[AbstractCollection] = [self.configManager]
+        # self.sequenceContext: AbstractCollection = self.configManager
         self.lastStackState = ''
         self.lastMenu = None
         self.name = None
@@ -149,38 +150,65 @@ class Service:
     #         self.scriptRunner.execute_match(filter_item, scope)
     #         return scope["window"].match
 
-    def change_context(self, context):
-        if self.sequenceContext != context:
-            if self.sequenceContext != self.configManager:
-                self.sequenceContext.ungrab(self.mediator.interface)
-            self.sequenceContext = context
-            if self.sequenceContext != self.configManager:
-                self.sequenceContext.grab(self.mediator.interface)
+    # def change_context(self, contexts):
+        # if self.sequenceContext != contexts:
+        #     if self.sequenceContext[0] != self.configManager:
+        #         for c in self.sequenceContext:
+        #            c.ungrab(self.mediator.interface)
+        #     self.sequenceContext = contexts
+            # if self.sequenceContext[0] != self.configManager:
+            #     for c in self.sequenceContext:
+            #         c.grab(self.mediator.interface)
 
-    def check_match(self, rawKey, modifiers, key, window_info, sequence):
-        itemMatch = None
+
+
+    # def check_match(self, rawKey, modifiers, key, window_info, sequence):
+    #     itemMatch = None
+    #     # folderMatch = None
+    #     for item in sequence.children:
+    #         if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):[0
+    #             if isinstance(item, autokey.model.folder.Folder):
+    #                 if item.hotKeyType == FOLDER_KEY_SEQUENCE:
+    #                     itemMatch = item
+    #                     print("sequence: " + str(item))
+    #                     self.change_context(item)
+    #                 else:
+    #                     itemMatch = item
+    #                     self.change_context(self.configManager)
+    #             else:
+    #                 itemMatch = item
+    #                 self.change_context(self.configManager)
+    #             break
+    #         elif isinstance(item, autokey.model.folder.Folder) and\
+    #             not item.hotKeyType == FOLDER_KEY_SEQUENCE and\
+    #             item._should_trigger_window_title(window_info, self.matchRunner):
+    #             itemMatch = self.check_match(rawKey, modifiers, key, window_info, item) # TODO should we reset sequenceContext here, or if not where
+    #             if itemMatch is not None:
+    #                 break
+    #     return itemMatch
+
+
+    def check_match(self, rawKey, modifiers, key, window_info, sequenceList):
+        itemMatch = []
         # folderMatch = None
-        for item in sequence.children:
-            if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
-                if isinstance(item, autokey.model.folder.Folder):
-                    if item.hotKeyType == FOLDER_KEY_SEQUENCE:
-                        itemMatch = item
-                        print("sequence: " + str(item))
-                        self.change_context(item)
+        for sequence in sequenceList:
+            for item in sequence.children:
+                if item.check_hotkey(modifiers, rawKey, window_info, self.matchRunner):
+                    itemMatch.append(item)
+                    if isinstance(item, autokey.model.folder.Folder):
+                        if item.hotKeyType == FOLDER_KEY_SEQUENCE:
+                            break
                     else:
-                        itemMatch = item
-                        self.change_context(self.configManager)
-                else:
-                    itemMatch = item
-                    self.change_context(self.configManager)
-                break
-            elif isinstance(item, autokey.model.folder.Folder) and\
-                not item.hotKeyType == FOLDER_KEY_SEQUENCE and\
-                item._should_trigger_window_title(window_info, self.matchRunner):
-                itemMatch = self.check_match(rawKey, modifiers, key, window_info, item) # TODO should we reset sequenceContext here, or if not where
-                if itemMatch is not None:
-                    break
+                        break
+                elif isinstance(item, autokey.model.folder.Folder) and \
+                    not item.hotKeyType == FOLDER_KEY_SEQUENCE and \
+                    item._should_trigger_window_title(window_info, self.matchRunner):
+                    itemMatch.extend(self.check_match(rawKey, modifiers, key, window_info, [item])) # TODO should we reset sequenceContext here, or if not where
+                    # if itemMatch is not None:
+                    #     break
         return itemMatch
+
+
 
     def handle_keypress(self, rawKey, modifiers, key, window_info):
         print("handle_keypress")
@@ -196,14 +224,15 @@ class Service:
             # itemMatch = None
             # folderMatch = None
             menu = None
-            sequence = self.sequenceContext
-            #self.sequenceContext = self.configManager
-            itemMatch = self.check_match(rawKey, modifiers, key, window_info, sequence)
+            # sequence = self.sequenceContext
+            # self.sequenceContext = self.configManager
+            print("SEQUENCE" + str(self.sequenceContext))
+            itemMatch = self.check_match(rawKey, modifiers, key, window_info, self.sequenceContext)
             # for item in sequence.children:
             #     if item.check_hotkPOPUPey(modifiers, rawKey, window_info, self.matchRunner):
             #         if isinstance(item, autokey.model.folder.Folder):
             #             if item.hotKeyType == FOLDER_KEY_SEQUENCE:
-            #                 self.sequenceContext = item
+            #                self.sequenceContext = item
             #             else:
             #                 folderMatch = item
             #         else:
@@ -222,14 +251,33 @@ class Service:
             #             folderMatch = folder
 
             print("itemMatch: " + str(itemMatch))
-            if itemMatch is not None and isinstance(itemMatch, autokey.model.folder.Folder):
-                if itemMatch.hotKeyType == FOLDER_KEY_POPUP:
-                    menu = ([itemMatch], [])
-                else:
-                    itemMatch = None
-            elif itemMatch is not None and itemMatch.prompt:  #TODO... is "prompt" the eqivilent of "popup"?
-                menu = ([], [itemMatch])
-                itemMatch = None
+            self.sequenceContext = [self.configManager]
+            itemExec = list(filter(lambda x: not isinstance(x, autokey.model.folder.Folder) and not x.prompt, itemMatch))
+            if len(itemExec) > 0:
+                folderPrompt = []
+                itemPrompt = []
+            ctx = list(filter(lambda x: isinstance(x, autokey.model.folder.Folder) and x.hotKeyType == FOLDER_KEY_SEQUENCE, itemMatch))
+            if len(ctx) > 0:
+                self.sequenceContext = ctx
+                folderPrompt = []
+                itemPrompt = []
+            folderPrompt = list(filter(lambda x: isinstance(x, autokey.model.folder.Folder) and x.hotKeyType == FOLDER_KEY_POPUP, itemMatch))
+            itemPrompt = list(filter(lambda x: not isinstance(x, autokey.model.folder.Folder) and x.prompt, itemMatch))
+            if len(folderPrompt) > 0 or len(itemPrompt) > 0:
+                menu = (folderPrompt, itemPrompt)
+
+
+            # self.change_context(context)
+
+            # if itemMatch is not None and isinstance(itemMatch, autokey.model.folder.Folder):
+            #     if itemMatch.hotKeyType == FOLDER_KEY_POPUP:
+            #         menu = ([itemMatch], [])
+            #     else:
+            #         itemMatch = None
+            # elif itemMatch is not None and itemMatch.prompt:  #TODO... is "prompt" the eqivilent of "popup"?
+            #     menu = ([], [itemMatch])
+            #     itemMatch = None
+
 
             if menu is not None:
                 logger.debug("Matched Folder with hotkey - showing menu")
@@ -240,12 +288,16 @@ class Service:
                 self.lastMenu = menu
                 #self.lastMenu.show_on_desktop()
                 self.app.show_popup_menu(*menu)
-            elif itemMatch is not None:
+
+            # elif itemMatch is not None:
+
+            if len(itemExec) > 0:
                 print("itemMatch is not None")
                 self.__tryReleaseLock()
-                self.__processItem(itemMatch)
-            else:
-                print("No item match: " + key)
+                self.__processItem(itemExec[0])
+            # else:
+            #     print("No item match: " + key)
+
             #     self.mediator.interface.__send_modified_key(key, modifiers)
 
 
@@ -430,7 +482,7 @@ class Service:
 
     def __processItem(self, item, buffer=''):
         self.inputStack.clear()
-        self.sequenceContext = self.configManager
+        # self.sequenceContext = [self.configManager]
         self.lastStackState = ''
 
         if isinstance(item, autokey.model.phrase.Phrase):

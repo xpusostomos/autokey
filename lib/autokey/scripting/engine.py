@@ -291,7 +291,7 @@ Folders created within temporary folders must themselves be set temporary")
 
         self.monitor.suspend()
         p = autokey.model.phrase.Phrase(description, contents)
-        p.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
+        p.modes.add(autokey.model.helpers.TriggerMode.ABBREVIATION)
         p.abbreviations = [abbr]
         folder.add_item(p)
         p.persist()
@@ -332,7 +332,7 @@ Folders created within temporary folders must themselves be set temporary")
 
         self.monitor.suspend()
         p = autokey.model.phrase.Phrase(description, contents)
-        p.modes.append(autokey.model.helpers.TriggerMode.HOTKEY)
+        p.modes.add(autokey.model.helpers.TriggerMode.HOTKEY)
         p.set_hotkey(modifiers, key)
         folder.add_item(p)
         p.persist()

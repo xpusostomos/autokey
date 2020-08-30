@@ -28,6 +28,7 @@ import autokey.iomediator.keygrabber
 import autokey.iomediator.windowgrabber
 
 from ..model.abstract_hotkey import FOLDER_KEY_POPUP, FOLDER_KEY_SEQUENCE
+from ..model.abstract_window_filter import AbstractWindowFilter
 
 GETTEXT_DOMAIN = 'autokey'
 
@@ -291,7 +292,7 @@ class AbbrSettingsDialog(DialogBase):
         item.clear_abbreviations()
         item.abbreviations = self.get_abbrs()
         if len(item.abbreviations) > 0:
-            item.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
+            item.modes.add(autokey.model.helpers.TriggerMode.ABBREVIATION)
 
             item.backspace = self.removeTypedCheckbox.get_active()
 
@@ -416,7 +417,7 @@ class AbbrSettingsDialog(DialogBase):
 
 class HotkeySettingsDialog(DialogBase):
 
-    NONE_KEY = '(None)'
+    # NONE_KEY = '(None)'
 
     KEY_MAP = {
                ' ': "<space>",
@@ -471,7 +472,7 @@ class HotkeySettingsDialog(DialogBase):
 
             key = item.hotKey
             if key is None:
-                keyText = self.NONE_KEY
+                keyText = AbstractWindowFilter.NONE_CONFIGURED
             elif key in self.KEY_MAP:
                 keyText = self.KEY_MAP[key]
             else:
@@ -483,7 +484,8 @@ class HotkeySettingsDialog(DialogBase):
             self.reset()
 
     def save(self, item):
-        item.modes.append(autokey.model.helpers.TriggerMode.HOTKEY)
+        if self.key is not None:
+            item.modes.add(autokey.model.helpers.TriggerMode.HOTKEY)
 
         # Build modifier list
         modifiers = self.build_modifiers()
@@ -509,7 +511,7 @@ class HotkeySettingsDialog(DialogBase):
         self.hyperButton.set_active(False)
         self.metaButton.set_active(False)
 
-        self._setKeyLabel(_(self.NONE_KEY))
+        self._setKeyLabel(AbstractWindowFilter.NONE_CONFIGURED)
         self.key = None
         self.setButton.set_sensitive(True)
 

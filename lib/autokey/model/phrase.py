@@ -155,7 +155,7 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
 
         # TODO - re-enable me if restoring predictive functionality
         #if TriggerMode.PREDICTIVE in source_phrase.modes:
-        #    self.modes.append(TriggerMode.PREDICTIVE)
+        #    self.modes.add(TriggerMode.PREDICTIVE)
 
         self.prompt = source_phrase.prompt
         self.omitTrigger = source_phrase.omitTrigger
@@ -169,7 +169,7 @@ class Phrase(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         return "text-plain", self.description, self.get_abbreviations(), self.get_hotkey_string(), self
 
     def set_modes(self, modes: typing.List[TriggerMode]):
-        self.modes = modes
+        self.modes = set(modes)
 
     def check_input(self, buffer, window_info, script_runner: ScriptRunner):
         if TriggerMode.ABBREVIATION in self.modes:

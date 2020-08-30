@@ -53,14 +53,16 @@ class AbstractHotkey:
         modifiers.sort()
         self.modifiers = modifiers
         self.hotKey = key
-        if key is not None:
-            self.modes.append(TriggerMode.HOTKEY)
+        if key is None:
+            self.modes.discard(TriggerMode.HOTKEY)
+        else:
+            self.modes.add(TriggerMode.HOTKEY)
 
     def unset_hotkey(self):
         self.modifiers = None
         self.hotkey = None
         if TriggerMode.HOTKEY in self.modes:
-            self.modes.remove(TriggerMode.HOTKEY)
+            self.modes.discard(TriggerMode.HOTKEY)
 
     def check_hotkey(self, modifiers, key, windowTitle, match_runner: ScriptRunner):  #TODO chris
         if self.hotKey is not None and self.modifiers == modifiers and self.hotKey == key and self._should_trigger_window_title(windowTitle, match_runner):

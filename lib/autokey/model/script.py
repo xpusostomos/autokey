@@ -216,7 +216,7 @@ class Script(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         return "text-x-python", self.description, self.get_abbreviations(), self.get_hotkey_string(), self
 
     def set_modes(self, modes: typing.List[TriggerMode]):
-        self.modes = modes
+        self.modes = set(modes)
 
     def check_input(self, buffer, window_info, script_runner: ScriptRunner):
         if TriggerMode.ABBREVIATION in self.modes:

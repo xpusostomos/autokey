@@ -102,7 +102,7 @@ class HotkeySettingsDialog(*ui_common.inherits_from_ui_file_with_name("hotkeyset
             self.reset()
 
     def save(self, item):
-        item.modes.append(autokey.model.helpers.TriggerMode.HOTKEY)
+        item.modes.add(autokey.model.helpers.TriggerMode.HOTKEY)
 
         # Build modifier list
         modifiers = self.build_modifiers()

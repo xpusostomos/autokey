@@ -203,7 +203,7 @@ class Folder(AbstractCommon, AbstractAbbreviation, AbstractHotkey, AbstractWindo
         return "folder", self.title, self.get_abbreviations(), self.get_hotkey_string(), self
 
     def set_modes(self, modes: typing.List[TriggerMode]):
-        self.modes = modes    #TODO somehow modes get duplicates when saving.
+        self.modes = set(modes)    #TODO somehow modes get duplicates when saving.
 
     def add_folder(self, folder):
         folder.parent = self

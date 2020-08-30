@@ -78,7 +78,7 @@ class AbstractAbbreviation:
             ))
         self.abbreviations.append(abbr)
         if TriggerMode.ABBREVIATION not in self.modes:
-            self.modes.append(TriggerMode.ABBREVIATION)
+            self.modes.add(TriggerMode.ABBREVIATION)
 
     def add_abbreviations(self, abbreviation_list: typing.Iterable[str]):
         if not isinstance(abbreviation_list, list):
@@ -87,7 +87,7 @@ class AbstractAbbreviation:
             raise ValueError("All added Abbreviations must be strings.")
         self.abbreviations += abbreviation_list
         if TriggerMode.ABBREVIATION not in self.modes:
-            self.modes.append(TriggerMode.ABBREVIATION)
+            self.modes.add(TriggerMode.ABBREVIATION)
 
     def clear_abbreviations(self):
         self.abbreviations = []

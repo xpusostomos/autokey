@@ -74,7 +74,7 @@ class PhrasePage(*ui_common.inherits_from_ui_file_with_name("phrasepage")):
 
         # TODO - re-enable me if restoring predictive functionality
         #if self.predictCheckbox.isChecked():
-        #    self.currentPhrase.modes.append(model.TriggerMode.PREDICTIVE)
+        #    self.currentPhrase.modes.add(model.TriggerMode.PREDICTIVE)
 
         self.current_phrase.prompt = self.promptCheckbox.isChecked()
 

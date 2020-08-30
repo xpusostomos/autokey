@@ -148,7 +148,7 @@ class SettingsWidget:
             self.abbrEnabled = False
 
         self.hotkeyDialog.load(self.currentItem)
-        if autokey.model.helpers.TriggerMode.HOTKEY in item.modes:
+        if autokey.model.helpers.TriggerMode.HOTKEY in item.modes and item.hotKey is not None:
             self.hotkeyLabel.set_text(item.get_hotkey_string())
             self.clearHotkeyButton.set_sensitive(True)
             self.hotkeyEnabled = True
@@ -1004,14 +1004,15 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         if response == Gtk.ResponseType.OK:
             path = dlg.get_filename()
             self.__createFolder(os.path.basename(path), None, path)
-            self.app.monitor.add_watch(path)
+           self.app.monitor.add_watch(path)
             dlg.destroy()
             self.app.config_altered(True)
         elif response == Gtk.ResponseType.NONE:
             dlg.destroy()
             name = self.__getNewItemName("Folder")
-            self.__createFolder(name, None)
-            self.app.config_altered(True)
+            if name is not None:
+                self.__createFolder(name, None)
+                self.app.config_altered(True)
         else:
             dlg.destroy()
 

@@ -29,13 +29,13 @@ class AbstractCommon:
         self.enabled = True
         self.parent = None
         self.usageCount = 0
-        self.modes = []  # type: typing.List[TriggerMode]
+        self.modes = set()  # type: typing.List[TriggerMode]
         self.match_script = SimpleScript('', '')
 
     def load_from_serialized(self, data):
         self.data = data
         self.usageCount = data.get("usageCount")
-        self.modes = [TriggerMode(item) for item in data["modes"]]
+        self.modes = set([TriggerMode(item) for item in data["modes"]])
         self.enabled = data.get("enabled")
         self.show_in_tray_menu = data.get("showInTrayMenu")
 

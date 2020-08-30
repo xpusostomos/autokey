@@ -400,7 +400,7 @@ class XInterfaceBase(threading.Thread):
                 window_info = self.get_window_info(window, False)
                 if window_info.wm_title or window_info.wm_class:
                     for item in hotkeys:
-                        if item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.matchRunner):
+                        if item.hotKey is not None and item.has_applicable_filter() and item._should_trigger_window_title(window_info, self.mediator.service.matchRunner):
                             self.__grabHotkey(item.hotKey, item.modifiers, window)
                             self.__grabRecurse(item, window, False)
                         

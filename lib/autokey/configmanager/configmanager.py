@@ -41,6 +41,7 @@ from autokey.configmanager.configmanager_constants import CONFIG_FILE, CONFIG_DE
 import autokey.configmanager.version_upgrading
 import autokey.configmanager.predefined_user_files
 from autokey.iomediator.constants import X_RECORD_INTERFACE
+from autokey.model.abstract_common import AbstractCommon
 from autokey.model.key import MODIFIERS
 
 from autokey.model.abstract_collection import AbstractCollection
@@ -618,7 +619,7 @@ class ConfigManager(AbstractCollection):
 
         if entry not in self.recentEntries:
             self.recentEntries.append(entry)
-            while len(self.recentEntries) > self.SETTINGS[RECENT_ENTRY_COUNT]:
+            while len(self.recentEntries) > self.SETTINGS[RECENT_ENTRY_COUNT]: # TODO RECENT_ENTRY_COUNT doesn't exist
                 self.recentEntries.pop(0)
 
             folder.items = []
@@ -798,7 +799,7 @@ class GlobalHotkey(autokey.model.abstract_hotkey.AbstractHotkey):
         self.match_script = SimpleScript('', '')   # TODO CJB how to hand for globals
         self.isRecursive = False
         self.parent = None
-        self.modes = []
+        self.modes = set()
 
     def get_serializable(self):
         d = {

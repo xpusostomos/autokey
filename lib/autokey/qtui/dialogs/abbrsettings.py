@@ -167,7 +167,7 @@ class AbbrSettingsDialog(*ui_common.inherits_from_ui_file_with_name("abbrsetting
         self.buttonBox.button(QDialogButtonBox.Ok).setEnabled(bool(self.get_abbrs()))
 
     def save(self, item):
-        item.modes.append(autokey.model.helpers.TriggerMode.ABBREVIATION)
+        item.modes.add(autokey.model.helpers.TriggerMode.ABBREVIATION)
         item.clear_abbreviations()
         item.abbreviations = self.get_abbrs()
 
