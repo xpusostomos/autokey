@@ -1004,7 +1004,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         if response == Gtk.ResponseType.OK:
             path = dlg.get_filename()
             self.__createFolder(os.path.basename(path), None, path)
-           self.app.monitor.add_watch(path)
+            self.app.monitor.add_watch(path)
             dlg.destroy()
             self.app.config_altered(True)
         elif response == Gtk.ResponseType.NONE:
